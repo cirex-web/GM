@@ -8,7 +8,7 @@
     "permissions":["activeTab"],
     "content_scripts":[
         {
-            "js":["https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js","content.js"],
+            "js":["/external/jquery.js","content.js"],
             "matches": [
                 "*://meet.google.com/*"
             ]
