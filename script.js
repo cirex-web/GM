@@ -37,6 +37,14 @@ let ELEMENTS = {
         str: "o4MlPd",
         type: "jsname"
     },
+    VOLUME_OUTPUT: {
+        str: "QgSmzd",
+        type: "jsname"
+    },
+    LIST_ITEM:{
+        str: "listitem",
+        type: "role"
+    }
 }
 class El {
     constructor(obj) {
@@ -61,7 +69,11 @@ try {
 
 let CLASS_NAMES = {
     SIDEBAR_OPEN: "kjZr4",
-    MUTED: "FTMc0c"
+    USER_NAME: "ZjFb7c",
+    USER_YOU: "QMC9Zd",
+    USER_MUTED: "FTMc0c", 
+    USER_ICON: "G394Xd",
+    NO_SOUND: "gjg47c"
 }
 
 let local = {
@@ -88,6 +100,7 @@ let utilFunctions = {
                 }
                 return false;
             }
+            
             return true;
         }
     },
@@ -100,13 +113,28 @@ let utilFunctions = {
                 } else {
                     local.clicked_sidebar = true;
                 }
+            }else if(matches(a,ELEMENTS.VOLUME_OUTPUT)){
+                a.classList.add(b);
+                updateSpeakerData(a,b);
             }
             return true;
             // console.log("same!");
         }
     }
 }
+function updateSpeakerData(speaker_el, class_added){
+    let list_container = getListItem(speaker_el);
 
+    if(list_container!=null && !speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)){
+        if(class_added==CLASS_NAMES.NO_SOUND){
+            speaker_el.style.background = "white";
+        }else{
+            speaker_el.style.background = "green";
+        }
+        // console.log(speaker_el.classList.value, list_container);
+
+    }
+}
 function matches(element, obj) {
     return element.getAttribute(obj.type) == obj.str;
 }
@@ -152,29 +180,14 @@ function run() {
         } else {
             local.clicked_sidebar = false;
             local.sidebar_hidden = false;
-            local.sidebar_init = false;
+            local.sidebar_init.phase_one = false;
+            local.sidebar_init.phase_two = false;
             clearInterval(interval);
         }
     } catch (e) {
         console.log(e);
     }
 
-
-}
-
-function preventBarFromClosing() {
-    window.default_MeetingsUi.di = function (a, b) {
-        // if(a.getAttribute("jscontroller")=="pGdfBb"){
-        //     console.log("removing class "+b+" from "+a.getAttribute("jscontroller"));
-        // }
-        if (b == CLASS_NAMES.SIDEBAR_OPEN) {
-            local.clicked_sidebar = false;
-            return;
-        }
-        a.classList ? a.classList.remove(b) : window.default_MeetingsUi.ai(a, b) && window.default_MeetingsUi.gia(a, window.default_MeetingsUi.fd(window.default_MeetingsUi.fia(a), function (c) {
-            return c != b
-        }).join(" "));
-    }
 
 }
 
@@ -209,6 +222,10 @@ function injectFunctions() {
             }
         }
     }
+}
+function getListItem(el){
+    while((el=el.parentElement)&&!matches(el,ELEMENTS.LIST_ITEM));
+    return el;
 }
 // See which students haven't spoken yet in class
 /*
