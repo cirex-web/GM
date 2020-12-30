@@ -1,10 +1,9 @@
 
 /*
 
-//TODO: adjust injected function so it moves the thing down
 ..TODO: monitor the add class function isntead of the actual buttons for sidebar opening. (user interaction) 
 
-
+// TODO: Add loading screen
 Percent for analysis
 
 Breakout rooms
@@ -22,25 +21,9 @@ let ELEMENTS = {
         str: "Show everyone",
         type: "aria-label"
     },
-    SHOW_CHAT: {
-        str: "Chat with everyone",
-        type: "aria-label"
-    },
     CLOSE: {
         str: "Close",
         type: "aria-label"
-    },
-    PRESENT: {
-        str: "Present now",
-        type: "aria-label"
-    },
-    BOTTOM_BAR: {
-        str: "kAPMuc",
-        type: "jscontroller"
-    },
-    TOP_BAR: {
-        str: "ur4S3c",
-        type: "jscontroller"
     },
     SIDE_BAR: {
         str: "pGdfBb",
@@ -67,12 +50,12 @@ class El {
         return "[" + this.type + "='" + this.str + "']";
     }
 }
-try{
+try {
     for (n of Object.keys(ELEMENTS)) {
         ELEMENTS[n] = new El(ELEMENTS[n]);
     }
-    
-}catch(e){
+
+} catch (e) {
     console.log(e);
 }
 
@@ -84,20 +67,25 @@ let CLASS_NAMES = {
 let local = {
     clicked_sidebar: false,
     sidebar_hidden: false,
-    sidebar_init: false,
+    sidebar_init: {
+        phase_one: false,
+        phase_two: false
+    }
 }
 let interval;
 
 let utilFunctions = {
     REMOVE_CLASS: {
         snippet: "a.classList.remove(b)",
-        func:(a,b)=>{
+        func: (a, b) => {
             // console.log("I have been injected!");
             // console.log(b,CLASS_NAMES.SIDEBAR_OPEN);
-            if (matches(a,ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
+            if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
                 local.clicked_sidebar = false; //TODO: Make it check for both class and place to put class 
                 //also check if it eixsts?
-                console.log("user closed side panel");
+                if (local.sidebar_init.phase_one && !local.sidebar_init.phase_two) {
+                    local.sidebar_init.phase_two = true;
+                }
                 return false;
             }
             return true;
@@ -105,13 +93,11 @@ let utilFunctions = {
     },
     ADD_CLASS: {
         snippet: "a.classList.add(b)",
-        func:  (a,b)=>{
-            if(matches(a,ELEMENTS.SIDE_BAR) &&  b == CLASS_NAMES.SIDEBAR_OPEN){
-                if(!local.sidebar_init){
-                    console.log("initializing side panel");
-                    local.sidebar_init = true;
-                }else{
-                    console.log("user opened side panel");
+        func: (a, b) => {
+            if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
+                if (!local.sidebar_init.phase_one) {
+                    local.sidebar_init.phase_one = true;
+                } else {
                     local.clicked_sidebar = true;
                 }
             }
@@ -121,17 +107,10 @@ let utilFunctions = {
     }
 }
 
-function matches(element, obj){
-    return element.getAttribute(obj.type)==obj.str;
+function matches(element, obj) {
+    return element.getAttribute(obj.type) == obj.str;
 }
 
-/*
-Remove class eLNT1d from jscontroller ur4S3c
-Remove class fT3JUc from kAPMuc 
-
-Change css jscontroller pGdfBb to transform: translate3d(100%,0,0);
-
-*/
 injectFunctions();
 document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
     interval = setInterval(run, 100);
@@ -143,7 +122,17 @@ function run() {
             if (!barOpen()) { //Should only be like this in the beginning
                 let side = ELEMENTS.SIDE_BAR.getEl();
                 side.arrive(ELEMENTS.CLOSE.formQuery(), () => {
-                    ELEMENTS.CLOSE.getEl().click();
+
+                    const loop = setInterval((id) => {
+
+                        ELEMENTS.CLOSE.getEl().click();
+                        console.log("clicked x");
+                        if (local.sidebar_init.phase_two) {
+                            clearInterval(loop);
+                            console.log("good to go!");
+                        }
+
+                    }, 50);
                     $(side).unbindArrive();
                 });
                 ELEMENTS.SHOW_USERS.getEl().click();
@@ -192,32 +181,31 @@ function preventBarFromClosing() {
 function inCall() {
     return ELEMENTS.SHOW_USERS.getEl().length > 0;
     // return $("[data-allocation-index]").length>0;
-    // return BUTTONS.fetchEl(BUTTONS.PRESENT).length != 0;
 }
 function barOpen() {
     // return OTHER.fetchEl(OTHER.SIDEBAR_CONTENT).html()!=="";
     return ELEMENTS.SIDE_BAR.getEl().hasClass(CLASS_NAMES.SIDEBAR_OPEN);
 }
 function inject(before, fn) {
-    return function(){
-        try{
-            if(before.apply(this, arguments)){
+    return function () {
+        try {
+            if (before.apply(this, arguments)) {
                 fn.apply(this, arguments);
             }
-        }catch(e){
+        } catch (e) {
             console.log(e);
         }
 
     }
 }
-function injectFunctions(){
-    for([name, original_func] of Object.entries(window.default_MeetingsUi)){
-        if(!original_func||typeof original_func != "function")continue;
-        for(injectObj of Object.values(utilFunctions)){
+function injectFunctions() {
+    for ([name, original_func] of Object.entries(window.default_MeetingsUi)) {
+        if (!original_func || typeof original_func != "function") continue;
+        for (injectObj of Object.values(utilFunctions)) {
 
-            if(Function.prototype.toString.call(original_func).includes(injectObj.snippet)){
+            if (Function.prototype.toString.call(original_func).includes(injectObj.snippet)) {
                 console.log(name);
-                window.default_MeetingsUi[name] = inject(injectObj.func,original_func);
+                window.default_MeetingsUi[name] = inject(injectObj.func, original_func);
             }
         }
     }
