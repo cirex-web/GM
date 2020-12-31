@@ -58,14 +58,10 @@ class El {
         return "[" + this.type + "='" + this.str + "']";
     }
 }
-try {
     for (n of Object.keys(ELEMENTS)) {
         ELEMENTS[n] = new El(ELEMENTS[n]);
     }
 
-} catch (e) {
-    console.log(e);
-}
 
 let CLASS_NAMES = {
     SIDEBAR_OPEN: "kjZr4",
@@ -90,11 +86,10 @@ let utilFunctions = {
     REMOVE_CLASS: {
         snippet: "a.classList.remove(b)",
         func: (a, b) => {
-            // console.log("I have been injected!");
-            // console.log(b,CLASS_NAMES.SIDEBAR_OPEN);
+
             if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
-                local.clicked_sidebar = false; //TODO: Make it check for both class and place to put class 
-                //also check if it eixsts?
+                local.clicked_sidebar = false; 
+                
                 if (local.sidebar_init.phase_one && !local.sidebar_init.phase_two) {
                     local.sidebar_init.phase_two = true;
                 }
@@ -114,11 +109,9 @@ let utilFunctions = {
                     local.clicked_sidebar = true;
                 }
             }else if(matches(a,ELEMENTS.VOLUME_OUTPUT)){
-                a.classList.add(b);
                 updateSpeakerData(a,b);
             }
             return true;
-            // console.log("same!");
         }
     }
 }
@@ -131,7 +124,6 @@ function updateSpeakerData(speaker_el, class_added){
         }else{
             speaker_el.style.background = "green";
         }
-        // console.log(speaker_el.classList.value, list_container);
 
     }
 }
@@ -145,7 +137,6 @@ document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
 });
 function run() {
     try {
-        // console.log(inCall());
         if (inCall()) {
             if (!barOpen()) { //Should only be like this in the beginning
                 let side = ELEMENTS.SIDE_BAR.getEl();
@@ -187,8 +178,6 @@ function run() {
     } catch (e) {
         console.log(e);
     }
-
-
 }
 
 function inCall() {
