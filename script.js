@@ -1,13 +1,13 @@
 
 /*
 
-..TODO: monitor the add class function isntead of the actual buttons for sidebar opening. (user interaction) 
 
-// TODO: Add loading screen
 Percent for analysis
 
-Breakout rooms
-Presentation
+
+Stuff to watch out for: 
+Breakout rooms (just stop tracking altogether)
+Presentation (don't track)
 
 Listen for object arrival in the beginning before starting loop
 
@@ -15,7 +15,20 @@ Listen in for class additions/deletions to each of the speaker things
 
 
 Data goes to chat which goes to server once no more messages are sent for the next min.
+
+TODO: monitor the side panel for new user joining and initialize in both user and meeting
+TODO: Record times
 */
+
+
+// Later
+//TODO: Aria labels don't work in other languages
+// TODO: Add loading screen
+
+
+let DATABASE_CONSTS = {
+    USERS: "users"
+}
 let ELEMENTS = {
     SHOW_USERS: {
         str: "Show everyone",
@@ -41,7 +54,7 @@ let ELEMENTS = {
         str: "QgSmzd",
         type: "jsname"
     },
-    LIST_ITEM:{
+    LIST_ITEM: {
         str: "listitem",
         type: "role"
     }
@@ -58,16 +71,16 @@ class El {
         return "[" + this.type + "='" + this.str + "']";
     }
 }
-    for (n of Object.keys(ELEMENTS)) {
-        ELEMENTS[n] = new El(ELEMENTS[n]);
-    }
+for (n of Object.keys(ELEMENTS)) {
+    ELEMENTS[n] = new El(ELEMENTS[n]);
+}
 
 
 let CLASS_NAMES = {
     SIDEBAR_OPEN: "kjZr4",
     USER_NAME: "ZjFb7c",
     USER_YOU: "QMC9Zd",
-    USER_MUTED: "FTMc0c", 
+    USER_MUTED: "FTMc0c",
     USER_ICON: "G394Xd",
     NO_SOUND: "gjg47c"
 }
@@ -80,6 +93,7 @@ let local = {
         phase_two: false
     }
 }
+
 let interval;
 
 let utilFunctions = {
@@ -88,14 +102,14 @@ let utilFunctions = {
         func: (a, b) => {
 
             if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
-                local.clicked_sidebar = false; 
-                
+                local.clicked_sidebar = false;
+
                 if (local.sidebar_init.phase_one && !local.sidebar_init.phase_two) {
                     local.sidebar_init.phase_two = true;
                 }
                 return false;
             }
-            
+
             return true;
         }
     },
@@ -108,34 +122,35 @@ let utilFunctions = {
                 } else {
                     local.clicked_sidebar = true;
                 }
-            }else if(matches(a,ELEMENTS.VOLUME_OUTPUT)){
-                updateSpeakerData(a,b);
+            } else if (matches(a, ELEMENTS.VOLUME_OUTPUT)) {
+                updateSpeakerData(a, b);
             }
             return true;
         }
     }
 }
-function updateSpeakerData(speaker_el, class_added){
-    let list_container = getListItem(speaker_el);
-
-    if(list_container!=null && !speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)){
-        if(class_added==CLASS_NAMES.NO_SOUND){
-            speaker_el.style.background = "white";
-        }else{
-            speaker_el.style.background = "green";
-        }
-
-    }
+Storage.prototype.setObject = function(key, value) {
+    this.setItem(key, JSON.stringify(value));
 }
-function matches(element, obj) {
-    return element.getAttribute(obj.type) == obj.str;
+
+Storage.prototype.getObject = function(key) {
+    var value = this.getItem(key);
+    return value && JSON.parse(value);
 }
+let user_database = localStorage.getObject("users") || [];
+let meeting_data = {
+    lastUpdated: + new Date(),
+    meeting_code: undefined, //TODO: 
+    user_data:{}
+};
 
 injectFunctions();
+
 document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
     interval = setInterval(run, 100);
 });
 function run() {
+
     try {
         if (inCall()) {
             if (!barOpen()) { //Should only be like this in the beginning
@@ -145,12 +160,10 @@ function run() {
                     const loop = setInterval((id) => {
 
                         ELEMENTS.CLOSE.getEl().click();
-                        console.log("clicked x");
                         if (local.sidebar_init.phase_two) {
+                            registerUsers();
                             clearInterval(loop);
-                            console.log("good to go!");
                         }
-
                     }, 50);
                     $(side).unbindArrive();
                 });
@@ -179,7 +192,14 @@ function run() {
         console.log(e);
     }
 }
-
+function registerUsers(){
+    for(el of ELEMENTS.LIST_ITEM.getEl()){
+        let USER_ID = el.querySelector("."+CLASS_NAMES.USER_ICON).src.toString().split("/").pop();
+        let USER_NAME = el.querySelector("."+CLASS_NAMES.USER_NAME).innerHTML;
+        user_database[USER_ID] = USER_NAME;
+        meeting_data.user_data[USER_ID] = 0;
+    }
+}
 function inCall() {
     return ELEMENTS.SHOW_USERS.getEl().length > 0;
     // return $("[data-allocation-index]").length>0;
@@ -212,10 +232,27 @@ function injectFunctions() {
         }
     }
 }
-function getListItem(el){
-    while((el=el.parentElement)&&!matches(el,ELEMENTS.LIST_ITEM));
+function getListItem(el) {
+    while ((el = el.parentElement) && !matches(el, ELEMENTS.LIST_ITEM));
     return el;
 }
+function updateSpeakerData(speaker_el, class_added) {
+    let list_container = getListItem(speaker_el);
+
+    if (list_container != null && !speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) {
+        if (class_added == CLASS_NAMES.NO_SOUND) {
+            list_container.style.background = "white";
+        } else {
+            list_container.style.background = "green";
+        }
+
+    }
+}
+function matches(element, obj) {
+    return element.getAttribute(obj.type) == obj.str;
+}
+
+
 // See which students haven't spoken yet in class
 /*
 For preserving video width
