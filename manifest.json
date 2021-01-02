@@ -3,7 +3,7 @@
     "name": "GM",
     "version":"0.1",
     "browser_action":{
-        "default_popup": "popup.html"
+        "default_popup": "/popup/popup.html"
     },
     "permissions":["activeTab","storage"],
     "content_scripts":[

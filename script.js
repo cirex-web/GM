@@ -2,22 +2,10 @@
 /*
 
 
-Percent for analysis
-
-
-Stuff to watch out for: 
-Breakout rooms (just stop tracking altogether)
-Presentation (don't track)
-
-Listen for object arrival in the beginning before starting loop
-
-Listen in for class additions/deletions to each of the speaker things
-
-
-Data goes to chat which goes to server once no more messages are sent for the next min.
-
 TODO: monitor the side panel for new user joining and initialize in both user and meeting
-TODO: Record times
+TODO: Update user database (in storage) every time it changes
+
+
 */
 
 
@@ -25,10 +13,9 @@ TODO: Record times
 //TODO: Aria labels don't work in other languages
 // TODO: Add loading screen
 
+// Very later
+//TODO: Change storage to sync
 
-let DATABASE_CONSTS = {
-    USERS: "users"
-}
 let ELEMENTS = {
     SHOW_USERS: {
         str: "Show everyone",
@@ -59,6 +46,7 @@ let ELEMENTS = {
         type: "role"
     }
 }
+
 class El {
     constructor(obj) {
         this.str = obj.str;
@@ -71,10 +59,6 @@ class El {
         return "[" + this.type + "='" + this.str + "']";
     }
 }
-for (n of Object.keys(ELEMENTS)) {
-    ELEMENTS[n] = new El(ELEMENTS[n]);
-}
-
 
 let CLASS_NAMES = {
     SIDEBAR_OPEN: "kjZr4",
@@ -94,56 +78,68 @@ let local = {
     }
 }
 
-let interval;
 
 let utilFunctions = {
     REMOVE_CLASS: {
         snippet: "a.classList.remove(b)",
         func: (a, b) => {
-
-            if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
-                local.clicked_sidebar = false;
-
-                if (local.sidebar_init.phase_one && !local.sidebar_init.phase_two) {
-                    local.sidebar_init.phase_two = true;
+            try{
+                if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
+                    local.clicked_sidebar = false;
+    
+                    if (local.sidebar_init.phase_one && !local.sidebar_init.phase_two) {
+                        local.sidebar_init.phase_two = true;
+                    }
+                    return false;
                 }
+    
+                return true;
+            }catch(e){
+                console.log(e);
                 return false;
             }
 
-            return true;
         }
     },
     ADD_CLASS: {
         snippet: "a.classList.add(b)",
         func: (a, b) => {
-            if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
-                if (!local.sidebar_init.phase_one) {
-                    local.sidebar_init.phase_one = true;
-                } else {
-                    local.clicked_sidebar = true;
+            try{
+                if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
+                    if (!local.sidebar_init.phase_one) {
+                        local.sidebar_init.phase_one = true;
+                    } else {
+                        local.clicked_sidebar = true;
+                    }
+                } else if (matches(a, ELEMENTS.VOLUME_OUTPUT)) {
+                    updateSpeakerData(a, b);
                 }
-            } else if (matches(a, ELEMENTS.VOLUME_OUTPUT)) {
-                updateSpeakerData(a, b);
+                return true;
+            }catch(e){
+                console.log(e);
+                return false;
             }
-            return true;
         }
     }
 }
 Storage.prototype.setObject = function(key, value) {
     this.setItem(key, JSON.stringify(value));
 }
-
 Storage.prototype.getObject = function(key) {
     var value = this.getItem(key);
     return value && JSON.parse(value);
 }
-let user_database = localStorage.getObject("users") || [];
+let user_database = localStorage.getObject("users") || []; //TODO: Change to extension storage and delete @above
+let interval;
 let meeting_data = {
     lastUpdated: + new Date(),
-    meeting_code: undefined, //TODO: 
-    user_data:{}
+    meeting_code: undefined, //TODO: set this to meeting URL ending
+    user_data:{} //TODO: see if data for this meeting already exists
 };
 
+for (n of Object.keys(ELEMENTS)) {
+    ELEMENTS[n] = new El(ELEMENTS[n]);
+}
 injectFunctions();
 
 document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
@@ -194,11 +190,17 @@ function run() {
 }
 function registerUsers(){
     for(el of ELEMENTS.LIST_ITEM.getEl()){
-        let USER_ID = el.querySelector("."+CLASS_NAMES.USER_ICON).src.toString().split("/").pop();
+        let USER_ID = getUserID(el);
         let USER_NAME = el.querySelector("."+CLASS_NAMES.USER_NAME).innerHTML;
         user_database[USER_ID] = USER_NAME;
-        meeting_data.user_data[USER_ID] = 0;
+        meeting_data.user_data[USER_ID] = {
+            speaking_time: 0,
+            is_speaking: false,
+            before_time: undefined,
+            cur_interval: -1
+        };
     }
+    sendMeetingData();
 }
 function inCall() {
     return ELEMENTS.SHOW_USERS.getEl().length > 0;
@@ -240,51 +242,48 @@ function updateSpeakerData(speaker_el, class_added) {
     let list_container = getListItem(speaker_el);
 
     if (list_container != null && !speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) {
+        let user = meeting_data.user_data[getUserID(list_container)];
+
         if (class_added == CLASS_NAMES.NO_SOUND) {
             list_container.style.background = "white";
+            if(user.cur_interval!=-1){
+                clearInterval(user.cur_interval);
+                user.cur_interval = -1;
+                user.is_speaking = false;
+                user.before_time = false;
+            }
         } else {
+            if(!user.is_speaking){
+                user.is_speaking = true;
+                user.cur_interval = addTimeToUser(user);
+            }
             list_container.style.background = "green";
         }
-
     }
+}
+function getUserID(list_el){
+    return list_el.querySelector("."+CLASS_NAMES.USER_ICON).src.toString().split("/").pop();
+}
+function addTimeToUser(user){
+    if(!user.before_time){
+        user.before_time = + new Date();
+    }
+    return setInterval(()=>{
+        let cur_time = new Date();
+        user.speaking_time+= cur_time - user.before_time;
+        user.before_time = cur_time;
+        sendMeetingData();
+    },10);
 }
 function matches(element, obj) {
     return element.getAttribute(obj.type) == obj.str;
 }
-
-
-// See which students haven't spoken yet in class
-/*
-For preserving video width
-
-window.default_MeetingsUi.ii = function (a) {
-    let width = 0;
-    if (typeof (window.innerWidth) == 'number') {
-        width = window.innerWidth;
-    } else if (document.documentElement && (document.documentElement.clientWidth || document.documentElement.clientHeight)) {
-        width = document.documentElement.clientWidth;
-    } else if (document.body && (document.body.clientWidth || document.body.clientHeight)) {
-        width = document.body.clientWidth;
-    }
-    return new window.default_MeetingsUi.Ef(width, a.height);
+function sendMeetingData(){
+    const event = new CustomEvent('terry_time', {
+        detail: {
+            meeting: meeting_data,
+            users: user_database
+        }
+    });
+    $("data_transfer")[0].dispatchEvent(event);
 }
-TODO: Possibly remove Ef altogether
-*/
-
-/*
-    find function with (si)
-    a.style.width
-    a.style.height
-
-    and other one with (oi)
-    a.style.left
-    a.style.top
-
-tiles' jsname is E2KThb
-
-
-e3d probably passes in data about tile container. (like width and height)
-variable called a has this thing but only inside e3d local var.
-- a.Da.v4() gets dimensions
-We change width somehow
-*/
