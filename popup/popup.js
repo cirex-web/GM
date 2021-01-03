@@ -1,5 +1,5 @@
 let STR = {
-    cur_meeting: "cur_meeting",
+    cur_meetings: "cur_meetings",
     users: "users"
 } //TODO: delete afterwards
 //TODO: deal with page refresh... should refresh data or something
@@ -24,15 +24,12 @@ window.onload = () => {
     });
 }
 function updateSpeakerData() {
-    console.log(cur_meeting);
     $("#test").html(cur_meeting.user_data["AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo"].speaking_time);
     
 }
 chrome.storage.onChanged.addListener(function (changes, namespace) {
-    console.log("changed!!");
     for (var key in changes) {
         var change = changes[key];
-        console.log(change.newValue);
         if (key === STR.cur_meetings) {
 
             for(let meet of change.newValue){

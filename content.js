@@ -3,92 +3,129 @@
 
 let STR = {
     cur_meetings: "cur_meetings",
-    users: "users"
+    users: "users",
+    all_other_meetings: "other_meetings"
 }
+class Meeting {
+    lastUpdated = + new Date();
+    meeting_code = undefined;
+    user_data = {};
+    category = "UNCATEGORIZED";
+}
+try{
+    if (window.location.pathname !== "/") {
 
-if (window.location.pathname !== "/") {
+        $(window).arrive('[jscontroller="ES310d"]', () => {
+            $(window).unbindArrive();
+            //Actually in a valid meeting
+            let el = document.createElement("data_transfer");
+            document.body.appendChild(el);
+            console.log("here1");
 
-    let el = document.createElement("data_transfer");
-    document.body.appendChild(el);
-
-    let meeting_data, user_database, cur_meeting;
-
-    let promises = [getFromStorage(STR.cur_meetings), getFromStorage(STR.users)];
-
-
-    Promise.allSettled(promises).then((vals) => {
-        meeting_data = vals[0].value || [];
-        meeting_data.push({
-            lastUpdated: + new Date(),
-            meeting_code: undefined, //TODO: set this to meeting URL ending
-            user_data: {}
-        });
-        //TODO: If it's an array, filter out all the meetings that are expired
-        user_database = vals[1].value || {};
-
-        sendScript("/external/jquery.js").onload = () => {
-            sendScript("/external/arrive.js").onload = () => {
-                sendScript("script.js").onload = () => {
-                    console.log("sending data");
-                    const event = new CustomEvent('data', {
-                        detail: {
-                            meeting_data: meeting_data,
-                            user_database: user_database
+            let cur_meetings_data, user_database, cur_meeting, meeting_database, meet_code;
+    
+            let promises = [getFromStorage(STR.cur_meetings), getFromStorage(STR.users), getFromStorage(STR.all_other_meetings)];
+    
+    
+            Promise.allSettled(promises).then((vals) => {
+                cur_meetings_data = vals[0].value || [];
+                meet_code = $('[data-meeting-code]').attr('data-meeting-code');
+                console.log("here");
+                user_database = vals[1].value || {};
+                meeting_database = vals[2].value || {};
+    
+                let addNewMeeting = true;
+                for (let meet of cur_meetings_data) {
+                    if (meet.meeting_code == meet_code) {
+                        addNewMeeting = false;
+                        break;
+                    }
+                }
+                if (addNewMeeting) {
+                    cur_meetings_data.push(new Meeting());
+                }
+                for (let i = 0; i < cur_meetings_data.length;) {
+                    if (isExpired(cur_meetings_data[i])) {
+                        //Removes meet from current meetings list and puts it into long-term storage
+                        let removed_meet = cur_meetings_data.splice(i, i + 1)[0];
+                        if (meeting_database[removed_meet.category]) {
+                            meeting_database[removed_meet.category].push(removed_meet);
+                        } else {
+                            meeting_database[removed_meet.category] = [removed_meet];
                         }
-                    });
-                    $("data_transfer")[0].dispatchEvent(event);
+                    } else {
+    
+                        i++;
+                    }
                 }
-            }
-        }
-        chrome.runtime.onMessage.addListener(
-            function (message, _, sendResponse) {
-                switch (message.type) {
-                    case "get_meeting_data":
-                        sendResponse({
-                            cur_meeting: cur_meeting,
-                            user_database: user_database
-
-                        });
-                        // console.log("sending",cur_meeting,user_database);
+    
+    
+                sendScript("/external/jquery.js").onload = () => {
+                    sendScript("/external/arrive.js").onload = () => {
+                        sendScript("script.js").onload = () => {
+                            const event = new CustomEvent('data', {
+                                detail: {
+                                    meeting_data: cur_meetings_data,
+                                    user_database: user_database,
+                                    meeting_database: meeting_database
+                                }
+                            });
+                            $("data_transfer")[0].dispatchEvent(event);
+                        }
+                    }
+                }
+                chrome.runtime.onMessage.addListener(
+                    function (message, _, sendResponse) {
+                        switch (message.type) {
+                            case "get_meeting_data":
+                                sendResponse({
+                                    cur_meeting: cur_meeting,
+                                    user_database: user_database,
+                                    meeting_database: meeting_database
+    
+                                });
+                                // console.log("sending",cur_meeting,user_database);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                );
+            });
+    
+            $("data_transfer")[0].addEventListener('terry_time', function (e) {
+                cur_meeting = e.detail.meeting_data;
+    
+                let merged = false
+    
+                for (let [i, meet] of cur_meetings_data.entries()) {
+                    if (meet.meeting_code == cur_meeting.meeting_code) {
+                        cur_meetings_data[i] = cur_meeting;
+                        merged = true;
                         break;
-                    default:
-                        break;
+                    }
                 }
-            }
-        );
-    });
-
-    $("data_transfer")[0].addEventListener('terry_time', function (e) {
-        cur_meeting = e.detail.meeting_data;
-        if (meeting_data[0].meeting_code == undefined) {
-            meeting_data[0] = cur_meeting;
-        } else {
-            let merged = false
-
-            for (let [i, meet] of meeting_data.entries()) {
-                if (meet.meeting_code == cur_meeting.meeting_code) {
-                    meeting_data[i] = cur_meeting;
-                    merged = true;
-                    break;
+    
+                if (!merged) {
+                    cur_meetings_data[cur_meetings_data.length-1] = cur_meeting;
+                    // cur_meetings_data.push(cur_meeting);
                 }
-            }
-
-            if (!merged) {
-                meeting_data.push(cur_meeting);
-            }
-        }
-
-        user_database = e.detail.user_database;
-
-        setInStorage(STR.cur_meetings, meeting_data);
-        setInStorage(STR.users, user_database);
-        
-    });
-
-
-} else {
-    console.log("Not in meet");
+    
+    
+                // user_database = e.detail.user_database;
+                setInStorage(STR.cur_meetings, cur_meetings_data);
+                setInStorage(STR.users, user_database);
+    
+            });
+        });
+    
+    } else {
+        console.log("Not in meet");
+    }
+}catch(e){
+    console.log("Error in content.js",e);
 }
+
 
 function getFromStorage(key) {
     return new Promise((re) => {
@@ -100,8 +137,7 @@ function getFromStorage(key) {
 function setInStorage(key, val) {
     return new Promise((re) => {
         chrome.storage.local.set({ [key]: val }, function () {
-            console.log("set", key);
-            re(); 
+            re();
         });
     });
 }
@@ -117,6 +153,9 @@ function sendScript(name, external = false) {
     document.body.appendChild(s);
 
     return s;
+}
+function isExpired(meet) {
+    return (new Date() - meet.lastUpdated) / (60000) >= 30;
 }
 // chrome.storage.local.set({key: value}, function() {
 //     console.log('Value is set to ' + value);
