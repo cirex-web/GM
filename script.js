@@ -83,18 +83,18 @@ let utilFunctions = {
     REMOVE_CLASS: {
         snippet: "a.classList.remove(b)",
         func: (a, b) => {
-            try{
+            try {
                 if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
                     local.clicked_sidebar = false;
-    
+
                     if (local.sidebar_init.phase_one && !local.sidebar_init.phase_two) {
                         local.sidebar_init.phase_two = true;
                     }
                     return false;
                 }
-    
+
                 return true;
-            }catch(e){
+            } catch (e) {
                 console.log(e);
                 return false;
             }
@@ -104,7 +104,7 @@ let utilFunctions = {
     ADD_CLASS: {
         snippet: "a.classList.add(b)",
         func: (a, b) => {
-            try{
+            try {
                 if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
                     if (!local.sidebar_init.phase_one) {
                         local.sidebar_init.phase_one = true;
@@ -115,36 +115,79 @@ let utilFunctions = {
                     updateSpeakerData(a, b);
                 }
                 return true;
-            }catch(e){
+            } catch (e) {
                 console.log(e);
                 return false;
             }
         }
     }
 }
-Storage.prototype.setObject = function(key, value) {
+Storage.prototype.setObject = function (key, value) {
     this.setItem(key, JSON.stringify(value));
 }
-Storage.prototype.getObject = function(key) {
+Storage.prototype.getObject = function (key) {
     var value = this.getItem(key);
     return value && JSON.parse(value);
 }
-let user_database = localStorage.getObject("users") || []; //TODO: Change to extension storage and delete @above
+//TODO: delete @above
+let meet_code = window.location.pathname.replace("/","");
 let interval;
-let meeting_data = {
-    lastUpdated: + new Date(),
-    meeting_code: undefined, //TODO: set this to meeting URL ending
-    user_data:{} //TODO: see if data for this meeting already exists
-};
+let meeting_data, user_database;
 
 for (n of Object.keys(ELEMENTS)) {
     ELEMENTS[n] = new El(ELEMENTS[n]);
 }
 injectFunctions();
+console.log("listener ready")
+$("data_transfer")[0].addEventListener('data', function (e) {
+    meeting_data = e.detail.meeting_data;
+    user_database = e.detail.user_database;
+
+
+    //TODO: Find relevant meeting... if none, go default.
+    //Make sure it's an obj
+    
+    if(!meeting_data[0].meeting_code){
+        meeting_data = meeting_data[0];
+    }else{
+        let found = false;
+        for(let meet of meeting_data){
+            if(meet.meeting_code === meet_code){
+                meeting_data = meet;
+                found = true;
+                break;
+            }
+        }
+        if(!found){
+            meeting_data = meeting_data[meeting_data.length-1];
+
+        }else{
+            delete meeting_data[meeting_data.length-1]; 
+        }
+    }
+    meeting_data.meeting_code = meet_code;
+
+    console.log('yes!!!');
+});
 
 document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
-    interval = setInterval(run, 100);
+    prepareToRun();
 });
+function prepareToRun() {
+    console.log(meeting_data, user_database);
+    if (meeting_data && user_database) {
+
+
+
+        interval = setInterval(run, 100);
+
+    } else {
+        setTimeout(() => {
+            prepareToRun();
+        }, 500);
+    }
+
+}
 function run() {
 
     try {
@@ -188,19 +231,25 @@ function run() {
         console.log(e);
     }
 }
-function registerUsers(){
-    for(el of ELEMENTS.LIST_ITEM.getEl()){
-        let USER_ID = getUserID(el);
-        let USER_NAME = el.querySelector("."+CLASS_NAMES.USER_NAME).innerHTML;
-        user_database[USER_ID] = USER_NAME;
-        meeting_data.user_data[USER_ID] = {
-            speaking_time: 0,
-            is_speaking: false,
-            before_time: undefined,
-            cur_interval: -1
-        };
-    }
-    sendMeetingData();
+function registerUsers() {
+    try{
+        for (el of ELEMENTS.LIST_ITEM.getEl()) {
+            let USER_ID = getUserID(el);
+            let USER_NAME = el.querySelector("." + CLASS_NAMES.USER_NAME).innerHTML;
+            user_database[USER_ID] = USER_NAME;
+            let user = meeting_data.user_data[USER_ID];
+            meeting_data.user_data[USER_ID] = {
+                speaking_time: user? user.speaking_time : 0,
+                is_speaking: false,
+                before_time: undefined,
+                cur_interval: -1
+            };
+        }
+    }catch(e){
+        console.log("ERORO",e);
+    };
+
+    updateStorage();
 }
 function inCall() {
     return ELEMENTS.SHOW_USERS.getEl().length > 0;
@@ -239,21 +288,23 @@ function getListItem(el) {
     return el;
 }
 function updateSpeakerData(speaker_el, class_added) {
-    let list_container = getListItem(speaker_el);
+    if (!local.sidebar_init.phase_two) return;
 
+    let list_container = getListItem(speaker_el);
+    meeting_data.lastUpdated = + new Date();
     if (list_container != null && !speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) {
         let user = meeting_data.user_data[getUserID(list_container)];
 
         if (class_added == CLASS_NAMES.NO_SOUND) {
             list_container.style.background = "white";
-            if(user.cur_interval!=-1){
+            if (user.cur_interval != -1) {
                 clearInterval(user.cur_interval);
                 user.cur_interval = -1;
                 user.is_speaking = false;
                 user.before_time = false;
             }
         } else {
-            if(!user.is_speaking){
+            if (!user.is_speaking) {
                 user.is_speaking = true;
                 user.cur_interval = addTimeToUser(user);
             }
@@ -261,28 +312,28 @@ function updateSpeakerData(speaker_el, class_added) {
         }
     }
 }
-function getUserID(list_el){
-    return list_el.querySelector("."+CLASS_NAMES.USER_ICON).src.toString().split("/").pop();
+function getUserID(list_el) {
+    return list_el.querySelector("." + CLASS_NAMES.USER_ICON).src.toString().split("/").pop();
 }
-function addTimeToUser(user){
-    if(!user.before_time){
+function addTimeToUser(user) {
+    if (!user.before_time) {
         user.before_time = + new Date();
     }
-    return setInterval(()=>{
+    return setInterval(() => {
         let cur_time = new Date();
-        user.speaking_time+= cur_time - user.before_time;
+        user.speaking_time += cur_time - user.before_time;
         user.before_time = cur_time;
-        sendMeetingData();
-    },10);
+        updateStorage();
+    }, 10);
 }
 function matches(element, obj) {
     return element.getAttribute(obj.type) == obj.str;
 }
-function sendMeetingData(){
+function updateStorage() {
     const event = new CustomEvent('terry_time', {
         detail: {
-            meeting: meeting_data,
-            users: user_database
+            meeting_data: meeting_data,
+            user_database: user_database
         }
     });
     $("data_transfer")[0].dispatchEvent(event);
