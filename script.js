@@ -190,7 +190,6 @@ try {
 
         } else {
             setTimeout(() => {
-                console.log("ok");
                 prepareToRun();
             }, 500);
         }

@@ -2,9 +2,10 @@ let STR = {
     cur_meetings: "cur_meetings",
     users: "users"
 }
+//TODO: deal with page refresh... should refresh data or something
 
-    //TODO: deal with page refresh... should refresh data or something
-let user_database, cur_meeting, meet_code;
+
+let user_database, cur_meeting, meet_code; //these are the variables that contain the current meeting data (they're updated automatically and updateSpeakerData() is called everytime there's an update.)
 /*
 //user_database contains every seen user
 key: image ID, (Generated at time of first appearance)
@@ -46,36 +47,55 @@ Value:{
 
 Good luck! :)
 */
-
 window.onload = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, function (data) {
-            user_database = data.user_database;
-            cur_meeting = data.cur_meeting;
-            console.log(data);
+
             if (chrome.runtime.lastError) {
-                $("#test").html(chrome.runtime.lastError);
+                $("#test").html("You aren't in a call yet!");
 
-            }else if(!user_database||!cur_meeting){
-                $("#test").html("No data yet!");
-            }else{
-                meet_code = cur_meeting.meeting_code;
+            } else {
+                user_database = data.user_database;
+                cur_meeting = data.cur_meeting;
+                console.log(data);
+                if (!user_database || !cur_meeting) {
+                    $("#test").html("No data yet!");
+                } else {
+                    meet_code = cur_meeting.meeting_code;
 
-                updateSpeakerData();
-            }
-        });
+                    updateSpeakerData();
+                }
+            };
+        })
     });
+
+    let page = $(".tab")[0].innerHTML;
+
+    $(".tab").on( "mouseover",function (){
+        $(this).addClass("selected");
+    });
+    $(".tab").on( "mouseout",function (){
+        if(page!=$(this).html()){
+            $(this).removeClass("selected");
+        }
+    });
+    $(".tab").click(function(){
+        $(".tab").removeClass("selected");
+        $(this).addClass("selected");
+        page = $(this).html();
+        
+    })
 }
 function updateSpeakerData() {
     $("#test").html(cur_meeting.user_data["AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo"].speaking_time);
 }
-chrome.storage.onChanged.addListener(function (changes, namespace) {
+chrome.storage.onChanged.addListener(function (changes) {
     for (var key in changes) {
         var change = changes[key];
         if (key === STR.cur_meetings) {
 
-            for(let meet of change.newValue){
-                if(meet.meeting_code==meet_code){
+            for (let meet of change.newValue) {
+                if (meet.meeting_code == meet_code) {
                     cur_meeting = meet;
                     break;
                 }
