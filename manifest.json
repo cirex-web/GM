@@ -14,9 +14,9 @@
             ]
         }
     ],
-    "content_security_policy": "script-src 'self' https://ajax.googleapis.com; object-src 'self'",
+    "content_security_policy": "style-src 'self' https://kit.fontawesome.com; 'unsafe-inline'",
     "web_accessible_resources": [
-        "script.js","/external/jquery.js","/external/arrive.js"
+        "script.js","/external/jquery.js","/external/arrive.js","https://kit.fontawesome.com","/popup/popup.js"
       ]
  
 }

@@ -34,14 +34,12 @@ try{
     
                 let addNewMeeting = true;
                 for (let meet of cur_meetings_data) {
-                    if (meet.meeting_code == meet_code) {
+                    if (meet.meeting_code == meet_code && !isExpired(meet)) {
                         addNewMeeting = false;
                         break;
                     }
                 }
-                if (addNewMeeting) {
-                    cur_meetings_data.push(new Meeting());
-                }
+
                 for (let i = 0; i < cur_meetings_data.length;) {
                     if (isExpired(cur_meetings_data[i])) {
                         //Removes meet from current meetings list and puts it into long-term storage
@@ -56,7 +54,11 @@ try{
                         i++;
                     }
                 }
-    
+                setInStorage(STR.all_other_meetings, meeting_database);
+
+                if (addNewMeeting) {
+                    cur_meetings_data.push(new Meeting());
+                }
     
                 sendScript("/external/jquery.js").onload = () => {
                     sendScript("/external/arrive.js").onload = () => {
@@ -154,7 +156,7 @@ function sendScript(name, external = false) {
     return s;
 }
 function isExpired(meet) {
-    return (new Date() - meet.lastUpdated) / (60000) >= 30;
+    return true||(new Date() - meet.lastUpdated) / (60000) >= 30;//TODO:
 }
 // chrome.storage.local.set({key: value}, function() {
 //     console.log('Value is set to ' + value);
