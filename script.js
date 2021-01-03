@@ -16,7 +16,7 @@ TODO: Update user database (in storage) every time it changes
 // Very later
 //TODO: Change storage to sync
 console.log("alive");
-try{
+try {
     let ELEMENTS = {
         SHOW_USERS: {
             str: "Show everyone",
@@ -45,6 +45,10 @@ try{
         LIST_ITEM: {
             str: "listitem",
             type: "role"
+        },
+        VOLUME_CONTAINER:{
+            str: "mUJV5",
+            type: "jscontroller"
         }
     }
     class El {
@@ -59,7 +63,7 @@ try{
             return "[" + this.type + "='" + this.str + "']";
         }
     }
-    
+
     let CLASS_NAMES = {
         SIDEBAR_OPEN: "kjZr4",
         USER_NAME: "ZjFb7c",
@@ -68,7 +72,7 @@ try{
         USER_ICON: "G394Xd",
         NO_SOUND: "gjg47c"
     }
-    
+
     let local = {
         clicked_sidebar: false,
         sidebar_hidden: false,
@@ -77,8 +81,8 @@ try{
             phase_two: false
         }
     }
-    
-    
+
+
     let utilFunctions = {
         REMOVE_CLASS: {
             snippet: "a.classList.remove(b)",
@@ -86,32 +90,33 @@ try{
                 try {
                     if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
                         local.clicked_sidebar = false;
-    
+
                         if (local.sidebar_init.phase_one && !local.sidebar_init.phase_two) {
                             local.sidebar_init.phase_two = true;
                         }
                         return false;
                     }
-    
+
                     return true;
                 } catch (e) {
                     console.log(e);
                     return false;
                 }
-    
+
             }
         },
         ADD_CLASS: {
             snippet: "a.classList.add(b)",
             func: (a, b) => {
                 try {
+
                     if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
                         if (!local.sidebar_init.phase_one) {
                             local.sidebar_init.phase_one = true;
                         } else {
                             local.clicked_sidebar = true;
                         }
-                    } else if (matches(a, ELEMENTS.VOLUME_OUTPUT)) {
+                    } else if (matches(a, ELEMENTS.VOLUME_OUTPUT)||matches(a,ELEMENTS.VOLUME_CONTAINER)) {
                         updateSpeakerData(a, b);
                     }
                     return true;
@@ -133,7 +138,7 @@ try{
     let meet_code = $('[data-meeting-code]').attr('data-meeting-code') || $('[data-unresolved-meeting-id]').attr('data-unresolved-meeting-id');
     let interval;
     let meeting_data, user_database, meeting_database;
-    
+
     for (n of Object.keys(ELEMENTS)) {
         ELEMENTS[n] = new El(ELEMENTS[n]);
     }
@@ -142,66 +147,66 @@ try{
         meeting_data = e.detail.meeting_data;
         user_database = e.detail.user_database;
         meeting_database = e.detail.meeting_database;
-    
-    
+
+
         //TODO: Find relevant meeting... if none, go default.
         //Make sure it's an obj
-    
-        console.log("meeting data and database: ", meeting_data, meeting_database);
-        try{
+
+        console.log("meeting data, meeting database, and user database: ", meeting_data, meeting_database, user_database);
+        try {
             let found = false;
-    
+
             for (let meet of meeting_data) {
                 if (meet.meeting_code === meet_code) {
-                    
+
                     meeting_data = meet;
                     found = true;
-    
+
                     break;
                 }
             }
             if (!found) {
                 meeting_data = meeting_data[meeting_data.length - 1];
                 meeting_data.meeting_code = meet_code;
-    
+
             }
             console.log("cur_meeting: ", meeting_data, meeting_database);
-        
-        
-        }catch(e){
+
+
+        } catch (e) {
             console.log(e);
         }
-    
+
     });
-    
+
     document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
         prepareToRun();
     });
     function prepareToRun() {
         if (meeting_data && user_database) {
-    
-    
-    
+
+
+
             interval = setInterval(run, 100);
-    
+
         } else {
             setTimeout(() => {
                 console.log("ok");
                 prepareToRun();
             }, 500);
         }
-    
+
     }
     function run() {
-    
+
         try {
             if (inCall()) {
                 if (!barOpen()) { //Should only be like this in the beginning
                     let side = ELEMENTS.SIDE_BAR.getEl();
                     side.arrive(ELEMENTS.CLOSE.formQuery(), () => {
-    
+
                         const loop = setInterval(() => {
-    
+
                             ELEMENTS.CLOSE.getEl().click();
                             if (local.sidebar_init.phase_two) {
                                 registerUsers();
@@ -212,8 +217,8 @@ try{
                     });
                     ELEMENTS.SHOW_USERS.getEl().click();
                 }
-    
-    
+
+
                 if (!local.clicked_sidebar && !local.sidebar_hidden) {
                     ELEMENTS.SIDE_BAR.getEl().css("transition-delay", "0s");
                     ELEMENTS.SIDE_BAR.getEl().css("transform", "translate3d(0,100px,0)");
@@ -223,7 +228,7 @@ try{
                     ELEMENTS.SIDE_BAR.getEl().css("transform", "translate3d(0,0,0)");
                     local.sidebar_hidden = false;
                 }
-    
+
             } else {
                 local.clicked_sidebar = false;
                 local.sidebar_hidden = false;
@@ -241,19 +246,19 @@ try{
                 const USER_ID = getUserID(el);
                 const USER_NAME = el.querySelector("." + CLASS_NAMES.USER_NAME).innerHTML;
                 let user = user_database[USER_ID];
-                if(!user){
+                if (!user) {
                     user_database[USER_ID] = {
                         TIME_CREATED: + new Date(),
                         NAME: USER_NAME,
                         IMG_ID: USER_ID
                     }
-                }else{
+                } else {
                     user.NAME = USER_NAME;
                 }
-    
-                let user = meeting_data.user_data[USER_ID];
+                console.log(user_database);
+                let user_in_meet = meeting_data.user_data[USER_ID];
                 meeting_data.user_data[USER_ID] = {
-                    speaking_time: user ? user.speaking_time : 0,
+                    speaking_time: user_in_meet ? user_in_meet.speaking_time : 0,
                     is_speaking: false,
                     before_time: undefined,
                     cur_interval: -1
@@ -262,7 +267,7 @@ try{
         } catch (e) {
             console.log("ERORO", e);
         };
-    
+
         updateStorage();
     }
     function inCall() {
@@ -282,14 +287,14 @@ try{
             } catch (e) {
                 console.log(e);
             }
-    
+
         }
     }
     function injectFunctions() {
         for ([name, original_func] of Object.entries(window.default_MeetingsUi)) {
             if (!original_func || typeof original_func != "function") continue;
             for (injectObj of Object.values(utilFunctions)) {
-    
+
                 if (Function.prototype.toString.call(original_func).includes(injectObj.snippet)) {
                     console.log(name);
                     window.default_MeetingsUi[name] = inject(injectObj.func, original_func);
@@ -303,36 +308,44 @@ try{
     }
     function updateSpeakerData(speaker_el, class_added) {
         if (!local.sidebar_init.phase_two) return;
-    
+
         let list_container = getListItem(speaker_el);
         meeting_data.lastUpdated = + new Date();
-        if (list_container != null && !speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) {
+        if (list_container != null) {
             let user = meeting_data.user_data[getUserID(list_container)];
-    
-            if (class_added == CLASS_NAMES.NO_SOUND) {
-                list_container.style.background = "white";
-                if (user.cur_interval != -1) {
-                    clearInterval(user.cur_interval);
-                    user.cur_interval = -1;
-                    user.is_speaking = false;
-                    user.before_time = false;
+            if(class_added === CLASS_NAMES.USER_MUTED){
+                console.log("hit!");
+                stopTrackingUserTime(user, list_container);
+            }else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) {
+                if (class_added == CLASS_NAMES.NO_SOUND) {
+                    stopTrackingUserTime(user, list_container);
+                } else {
+                    if (!user.is_speaking) {
+                        user.cur_interval = startTrackingUserTime(user, list_container);
+                    }
                 }
-            } else {
-                if (!user.is_speaking) {
-                    user.is_speaking = true;
-                    user.cur_interval = addTimeToUser(user);
-                }
-                list_container.style.background = "green";
             }
         }
+    }
+    function stopTrackingUserTime(user, list_container) {
+        list_container.style.background = "white";
+        if (user.is_speaking) {
+            clearInterval(user.cur_interval);
+            user.cur_interval = -1;
+            user.is_speaking = false;
+            user.before_time = false;
+        }
+
     }
     function getUserID(list_el) {
         return list_el.querySelector("." + CLASS_NAMES.USER_ICON).src.toString().split("/").pop();
     }
-    function addTimeToUser(user) {
+    function startTrackingUserTime(user, list_container) {
         if (!user.before_time) {
             user.before_time = + new Date();
         }
+        user.is_speaking = true;
+        list_container.style.background = "green";
         return setInterval(() => {
             let cur_time = new Date();
             user.speaking_time += cur_time - user.before_time;
@@ -352,6 +365,6 @@ try{
         });
         $("data_transfer")[0].dispatchEvent(event);
     }
-}catch(e){
+} catch (e) {
     console.log(e);
 }

@@ -30,7 +30,6 @@ try{
             Promise.allSettled(promises).then((vals) => {
                 cur_meetings_data = vals[0].value || [];
                 meet_code = $('[data-meeting-code]').attr('data-meeting-code');
-                console.log("here");
                 user_database = vals[1].value || {};
                 meeting_database = vals[2].value || {};
     
@@ -97,22 +96,24 @@ try{
                 cur_meeting = e.detail.meeting_data;
     
                 let merged = false
-    
+                let defaultMeeting = -1;
                 for (let [i, meet] of cur_meetings_data.entries()) {
                     if (meet.meeting_code == cur_meeting.meeting_code) {
                         cur_meetings_data[i] = cur_meeting;
                         merged = true;
                         break;
+                    }else if(!meet.meeting_code){
+                        defaultMeeting = i;
                     }
                 }
     
                 if (!merged) {
-                    cur_meetings_data[cur_meetings_data.length-1] = cur_meeting;
+                    cur_meetings_data[defaultMeeting] = cur_meeting;
                     // cur_meetings_data.push(cur_meeting);
                 }
     
-    
-                // user_database = e.detail.user_database;
+                user_database = e.detail.user_database;
+                // console.log(user_database);
                 setInStorage(STR.cur_meetings, cur_meetings_data);
                 setInStorage(STR.users, user_database);
     

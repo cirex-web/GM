@@ -1,8 +1,8 @@
 let STR = {
     cur_meetings: "cur_meetings",
     users: "users"
-} //TODO: delete afterwards
-//TODO: deal with page refresh... should refresh data or something
+}
+    //TODO: deal with page refresh... should refresh data or something
 let user_database, cur_meeting, meet_code;
 window.onload = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
