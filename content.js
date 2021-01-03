@@ -20,7 +20,6 @@ try{
             //Actually in a valid meeting
             let el = document.createElement("data_transfer");
             document.body.appendChild(el);
-            console.log("here1");
 
             let cur_meetings_data, user_database, cur_meeting, meeting_database, meet_code;
     
@@ -150,7 +149,6 @@ function sendScript(name, external = false) {
         s.src = chrome.runtime.getURL(name);
 
     }
-    console.log(s.src);
     document.body.appendChild(s);
 
     return s;

@@ -2,8 +2,51 @@ let STR = {
     cur_meetings: "cur_meetings",
     users: "users"
 }
+
     //TODO: deal with page refresh... should refresh data or something
 let user_database, cur_meeting, meet_code;
+/*
+//user_database contains every seen user
+key: image ID, (Generated at time of first appearance)
+value: {
+    IMG_ID: current pfp URL (may or may not be identical to key. Multiple users may have the same IMG_ID attribute, which means that they're the same person)
+
+    NAME: user name
+    TIME_CREATED: time when first seen on google meet (not relevant here) 
+}
+
+Example:
+
+key: AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo, 
+value: {
+    IMG_ID: "AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo"
+    NAME: "Eric Xu"
+    TIME_CREATED: 1609695853290 
+}
+
+*/
+/*
+cur_meeting represents the current meeting obj
+
+category: "UNCATEGORIZED" 
+lastUpdated: 1609697134416 
+meeting_code: "kmr-bymc-avr"
+    user_data:
+        Key value pairs (see below)    
+
+
+One user entry in user data
+Key: image ID
+Value:{
+    before_time: Not relevant
+    cur_interval: Not relevant
+    is_speaking: Not relevant
+    speaking_time: yes  
+}
+
+Good luck! :)
+*/
+
 window.onload = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, function (data) {
@@ -25,7 +68,6 @@ window.onload = () => {
 }
 function updateSpeakerData() {
     $("#test").html(cur_meeting.user_data["AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo"].speaking_time);
-    
 }
 chrome.storage.onChanged.addListener(function (changes, namespace) {
     for (var key in changes) {
@@ -42,12 +84,6 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
         } else if (key === STR.users) {
             user_database = changes.newValue;
         }
-        //   console.log('Storage key "%s" in namespace "%s" changed. ' +
-        //               'Old value was "%s", new value is "%s".',
-        //               key,
-        //               namespace,
-        //               storageChange.oldValue,
-        //               storageChange.newValue);
-        // }
+
     }
 });

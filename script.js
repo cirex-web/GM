@@ -15,7 +15,6 @@ TODO: Update user database (in storage) every time it changes
 
 // Very later
 //TODO: Change storage to sync
-console.log("alive");
 try {
     let ELEMENTS = {
         SHOW_USERS: {
