@@ -12,6 +12,7 @@ class Meeting {
     user_data = {};
     category = "UNCATEGORIZED";
 }
+let debug = false;
 try{
     if (window.location.pathname !== "/") {
 
@@ -156,7 +157,7 @@ function sendScript(name, external = false) {
     return s;
 }
 function isExpired(meet) {
-    return true||(new Date() - meet.lastUpdated) / (60000) >= 30;//TODO:
+    return debug||(new Date() - meet.lastUpdated) / (60000) >= 30;
 }
 // chrome.storage.local.set({key: value}, function() {
 //     console.log('Value is set to ' + value);

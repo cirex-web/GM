@@ -92,7 +92,11 @@ window.onload = () => {
     })
 }
 function updateSpeakerData() {
-    $("#test").html(cur_meeting.user_data["AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo"].speaking_time);
+    let str = "";
+    for(let [id,user_data] of Object.entries(cur_meeting.user_data)){
+        str+=user_database[id].NAME+": "+user_data.speaking_time+"<br>"; 
+    }
+    $("#test").html(str);
 }
 function createChart(){
     var ctx = document.getElementById('timeGraph').getContext('2d');

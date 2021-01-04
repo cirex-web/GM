@@ -45,7 +45,7 @@ try {
             str: "listitem",
             type: "role"
         },
-        VOLUME_CONTAINER:{
+        VOLUME_CONTAINER: {
             str: "mUJV5",
             type: "jscontroller"
         }
@@ -78,7 +78,8 @@ try {
         sidebar_init: {
             phase_one: false,
             phase_two: false
-        }
+        },
+        registered_users: false
     }
 
 
@@ -115,7 +116,7 @@ try {
                         } else {
                             local.clicked_sidebar = true;
                         }
-                    } else if (matches(a, ELEMENTS.VOLUME_OUTPUT)||matches(a,ELEMENTS.VOLUME_CONTAINER)) {
+                    } else if (matches(a, ELEMENTS.VOLUME_OUTPUT) || matches(a, ELEMENTS.VOLUME_CONTAINER)) {
                         updateSpeakerData(a, b);
                     }
                     return true;
@@ -126,14 +127,7 @@ try {
             }
         }
     }
-    Storage.prototype.setObject = function (key, value) {
-        this.setItem(key, JSON.stringify(value));
-    }
-    Storage.prototype.getObject = function (key) {
-        var value = this.getItem(key);
-        return value && JSON.parse(value);
-    }
-    //TODO: delete @above
+
     let meet_code = $('[data-meeting-code]').attr('data-meeting-code') || $('[data-unresolved-meeting-id]').attr('data-unresolved-meeting-id');
     let interval;
     let meeting_data, user_database, meeting_database;
@@ -148,7 +142,6 @@ try {
         meeting_database = e.detail.meeting_database;
 
 
-        //TODO: Find relevant meeting... if none, go default.
         //Make sure it's an obj
 
         console.log("meeting data, meeting database, and user database: ", meeting_data, meeting_database, user_database);
@@ -181,13 +174,13 @@ try {
     document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
         prepareToRun();
     });
+    document.arrive(ELEMENTS.LIST_ITEM.formQuery(),()=>{
+        registerUsers();
+        console.log("registering...");
+    });
     function prepareToRun() {
         if (meeting_data && user_database) {
-
-
-
             interval = setInterval(run, 100);
-
         } else {
             setTimeout(() => {
                 prepareToRun();
@@ -201,17 +194,15 @@ try {
             if (inCall()) {
                 if (!barOpen()) { //Should only be like this in the beginning
                     let side = ELEMENTS.SIDE_BAR.getEl();
-                    side.arrive(ELEMENTS.CLOSE.formQuery(), () => {
+                    side.arrive(ELEMENTS.CLOSE.formQuery(),{existing: true, onceOnly: true}, () => {
 
                         const loop = setInterval(() => {
 
                             ELEMENTS.CLOSE.getEl().click();
                             if (local.sidebar_init.phase_two) {
-                                registerUsers();
                                 clearInterval(loop);
                             }
                         }, 50);
-                        $(side).unbindArrive();
                     });
                     ELEMENTS.SHOW_USERS.getEl().click();
                 }
@@ -241,26 +232,32 @@ try {
     function registerUsers() {
         try {
             for (el of ELEMENTS.LIST_ITEM.getEl()) {
-                const USER_ID = getUserID(el);
+                const USER_IMG_URL = getUserImage(el,true);
                 const USER_NAME = el.querySelector("." + CLASS_NAMES.USER_NAME).innerHTML;
+                const USER_ID = getUserImage(el);
                 let user = user_database[USER_ID];
                 if (!user) {
                     user_database[USER_ID] = {
                         TIME_CREATED: + new Date(),
                         NAME: USER_NAME,
-                        IMG_ID: USER_ID
+                        IMG_ID: USER_IMG_URL
                     }
                 } else {
                     user.NAME = USER_NAME;
                 }
-                console.log(user_database);
                 let user_in_meet = meeting_data.user_data[USER_ID];
-                meeting_data.user_data[USER_ID] = {
-                    speaking_time: user_in_meet ? user_in_meet.speaking_time : 0,
-                    is_speaking: false,
-                    before_time: undefined,
-                    cur_interval: -1
-                };
+                if(!local.registered_users||(local.registered_users&&!meeting_data.user_data[USER_ID])){
+                    meeting_data.user_data[USER_ID] = {
+                        speaking_time: user_in_meet ? user_in_meet.speaking_time : 0,
+                        is_speaking: false,
+                        before_time: undefined,
+                        cur_interval: -1
+                    };
+                }
+                console.log("updated user_database",user_database);
+                console.log("meeting_users",meeting_data.user_data);
+
+
             }
         } catch (e) {
             console.log("ERORO", e);
@@ -310,11 +307,11 @@ try {
         let list_container = getListItem(speaker_el);
         meeting_data.lastUpdated = + new Date();
         if (list_container != null) {
-            let user = meeting_data.user_data[getUserID(list_container)];
-            if(class_added === CLASS_NAMES.USER_MUTED){
-                console.log("hit!");
+            let user = meeting_data.user_data[getUserImage(list_container)];
+
+            if (class_added === CLASS_NAMES.USER_MUTED) {
                 stopTrackingUserTime(user, list_container);
-            }else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) {
+            } else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) {
                 if (class_added == CLASS_NAMES.NO_SOUND) {
                     stopTrackingUserTime(user, list_container);
                 } else {
@@ -335,8 +332,14 @@ try {
         }
 
     }
-    function getUserID(list_el) {
-        return list_el.querySelector("." + CLASS_NAMES.USER_ICON).src.toString().split("/").pop();
+    function getUserImage(list_el, full=false) {
+        let URL = list_el.querySelector("." + CLASS_NAMES.USER_ICON).src.toString();
+        if(full){
+            return URL;
+        }else{
+            URL = URL.replace("googleusercontent.com","").replace("https://","").replaceAll("/","").replaceAll(".","");
+            return URL;
+        }
     }
     function startTrackingUserTime(user, list_container) {
         if (!user.before_time) {
