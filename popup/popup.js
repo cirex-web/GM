@@ -50,10 +50,6 @@ Good luck! :)
 window.onload = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, function (data) {
-            user_database = data.user_database;
-            cur_meeting = data.cur_meeting;
-            console.log(data);
-
 
             if (chrome.runtime.lastError) {
                 $("#test").html("You aren't in a call yet!");
