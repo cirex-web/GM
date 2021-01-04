@@ -8,21 +8,11 @@ let STR = {
 let user_database, cur_meeting, meet_code; //these are the variables that contain the current meeting data (they're updated automatically and updateSpeakerData() is called everytime there's an update.)
 /*
 //user_database contains every seen user
-key: image ID, (Generated at time of first appearance)
+key: image ID, (Generated at time of first appearance and condensed)
 value: {
-    IMG_ID: current pfp URL (may or may not be identical to key. Multiple users may have the same IMG_ID attribute, which means that they're the same person)
-
+    IMG_ID: current pfp URL (NOT identical to key. Multiple users may have the same IMG_ID attribute, which means that they're the same person)
     NAME: user name
     TIME_CREATED: time when first seen on google meet (not relevant here) 
-}
-
-Example:
-
-key: AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo, 
-value: {
-    IMG_ID: "AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo"
-    NAME: "Eric Xu"
-    TIME_CREATED: 1609695853290 
 }
 
 */
@@ -41,7 +31,7 @@ Key: image ID
 Value:{
     before_time: Not relevant
     cur_interval: Not relevant
-    is_speaking: Not relevant
+    is_speaking: Mayeb relevant
     speaking_time: yes  
 }
 
