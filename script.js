@@ -210,7 +210,7 @@ try {
 
                 if (!local.clicked_sidebar && !local.sidebar_hidden) {
                     ELEMENTS.SIDE_BAR.getEl().css("transition-delay", "0s");
-                    ELEMENTS.SIDE_BAR.getEl().css("transform", "translate3d(0,100px,0)");
+                    ELEMENTS.SIDE_BAR.getEl().css("transform", "translate3d(100%,0,0)");
                     local.sidebar_hidden = true;
                 } else if (local.clicked_sidebar && local.sidebar_hidden) {
                     ELEMENTS.SIDE_BAR.getEl().css("transition-delay", "");
