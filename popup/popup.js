@@ -118,7 +118,9 @@ function updateSpeakerData() {
         timeGraph_obj.data.datasets[0].data[timeGraph_obj.data.labels.indexOf(user_database[id].NAME)] = user_data.speaking_time
     }
     $("#test").html(str);
+    timeGraph_obj.options.sort = true;
     timeGraph_obj.update();
+    timeGraph_obj.options.sort = false;
 }
 
 function createChart(){
@@ -139,6 +141,16 @@ function createChart(){
     }
     // the getColorAsync function is necessary to get the average color of an unloaded image, but the way it is right now results in color_set being an empty set when the graph is made
     var ctx = document.getElementById('timeGraph').getContext('2d');
+    let options = {
+            scales: {
+                xAxes: [{
+                    display: true,
+                    ticks: {
+                        beginAtZero: true,
+                    }
+                }]
+            }
+        }
     timeGraph_obj = new Chart(ctx, {
         type: 'horizontalBar',
         data: {
@@ -151,15 +163,7 @@ function createChart(){
                 borderWidth: 1
             }]
         },
-        options: {
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true
-                    }
-                }]
-            }
-        }
+        options: options
     });
     timeGraph_obj.options.sort = true;
     timeGraph_obj.update();
