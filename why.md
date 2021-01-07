@@ -8,3 +8,6 @@ Presentation (don't track)\
 
 Analysis:
 Percent for analysis
+
+
+b.removeChild(c); (is distinct)

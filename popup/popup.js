@@ -4,43 +4,46 @@ let STR = {
 }
 //TODO: deal with page refresh... should refresh data or something
 
-Chart.plugins.register({ //sorting
-    beforeUpdate: function(chart) {
-    if (chart.options.sort) {
-    console.log(chart.data.datasets[0]);
-      let dataArray = chart.data.datasets[0].data.slice();
-      
-      console.log(dataArray);
-      let dataIndexes = dataArray.map((d, i) => i);
-      dataIndexes.sort((a, b) => {
-        return dataArray[a] - dataArray[b];
-      });
-    
-      // sort data array as well
-      dataArray.sort((a, b) => a - b);
-    
-      // At this point dataIndexes is sorted by value of the data, so we 
-    //know how the indexes map to each other
-      let meta = chart.getDatasetMeta(0);
-      let newMeta = [];
-      let labels = chart.data.labels;
-      let newLabels = [];
-    
-      meta.data.forEach((a, i) => {
-        newMeta[dataIndexes[i]] = a;
-        newLabels[dataIndexes[i]] = chart.data.labels[i];
-      });
-    
-      meta.data = newMeta;
-      chart.data.datasets[0].data = dataArray;
-      chart.data.labels = newLabels;
-      }
-      }
-    });
-
 let user_database, cur_meeting, meet_code; //these are the variables that contain the current meeting data (they're updated automatically and updateSpeakerData() is called everytime there's an update.)
-var timeGraph_obj;
+let timeGraph_obj;
+let page;
+let header_names = {
+    'D':"Debug",
+    'C': "Current Meeting",
+    "H": "Meeting History",
+    "A": "Analysis"
+}
+Chart.plugins.register({ //sorting
+    beforeUpdate: function (chart) {
+        if (chart.options.sort) {
+            let dataArray = chart.data.datasets[0].data.slice();
 
+            let dataIndexes = dataArray.map((d, i) => i);
+            dataIndexes.sort((a, b) => {
+                return dataArray[a] - dataArray[b];
+            });
+
+            // sort data array as well
+            dataArray.sort((a, b) => a - b);
+
+            // At this point dataIndexes is sorted by value of the data, so we 
+            //know how the indexes map to each other
+            let meta = chart.getDatasetMeta(0);
+            let newMeta = [];
+            let labels = chart.data.labels;
+            let newLabels = [];
+
+            meta.data.forEach((a, i) => {
+                newMeta[dataIndexes[i]] = a;
+                newLabels[dataIndexes[i]] = chart.data.labels[i];
+            });
+
+            meta.data = newMeta;
+            chart.data.datasets[0].data = dataArray;
+            chart.data.labels = newLabels;
+        }
+    }
+});
 /*
 //user_database contains every seen user
 key: image ID, (Generated at time of first appearance and condensed)
@@ -66,13 +69,32 @@ Key: image ID
 Value:{
     before_time: Not relevant
     cur_interval: Not relevant
-    is_speaking: Mayeb relevant
+    is_speaking: Maybe relevant
     speaking_time: yes  
 }
 
 Good luck! :)
 */
 window.onload = () => {
+    chrome.storage.onChanged.addListener(function (changes) {
+        for (var key in changes) {
+            var cur_change = changes[key].newValue;
+            if (key === STR.cur_meetings) {
+    
+                for (let meet of cur_change) {
+                    if (meet.meeting_code == meet_code) {
+                        cur_meeting = meet;
+                        break;
+                    }
+                }
+                
+            } else if (key === STR.users) {
+                user_database = cur_change;
+                console.log("updated user_database to ",user_database);
+            }
+        }
+        updateSpeakerData();
+    });
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, function (data) {
 
@@ -83,38 +105,39 @@ window.onload = () => {
                 user_database = data.user_database;
                 cur_meeting = data.cur_meeting;
                 console.log(data);
-                createChart();
                 if (!user_database || !cur_meeting) {
                     $("#test").html("No data yet!");
                 } else {
                     meet_code = cur_meeting.meeting_code;
+                    createChart();
                     updateSpeakerData();
+
                 }
             };
         })
     });
 
-    let page = $(".tab")[0].innerHTML;
+    $(".tab").click(function () {
+        page = $(this).attr("ref");
 
-    $(".tab").on( "mouseover",function (){
-        $(this).addClass("selected");
-    });
-    $(".tab").on( "mouseout",function (){
-        if(page!=$(this).html()){
-            $(this).removeClass("selected");
-        }
-    });
-    $(".tab").click(function(){
+        $("#tab-container-heading").html(header_names[page]);
+        $(".tab-container").css("display","none");
         $(".tab").removeClass("selected");
+
+        $(".tab-container[ref="+page+"]").css("display","block");
         $(this).addClass("selected");
-        page = $(this).html();
-        
-    })
+    });
+    $(".tab[ref='C']").click();
+
 }
 function updateSpeakerData() {
+    if(!timeGraph_obj){
+        return;
+    }
     let str = "";
-    for(let [id,user_data] of Object.entries(cur_meeting.user_data)){
-        str+=user_database[id].NAME+": "+user_data.speaking_time+"<br>"; 
+    for (let [id, user_data] of Object.entries(cur_meeting.user_data)) {
+        str += user_database[id].NAME + ": " + user_data.speaking_time + "<br>";
+        
         timeGraph_obj.data.datasets[0].data[timeGraph_obj.data.labels.indexOf(user_database[id].NAME)] = user_data.speaking_time
     }
     $("#test").html(str);
@@ -122,26 +145,29 @@ function updateSpeakerData() {
     timeGraph_obj.update();
     timeGraph_obj.options.sort = false;
 }
-
-function createChart(){
+function createChart() {
     let label_set = [];
     let data_set = [];
     let color_set = [];
-    const fac = new FastAverageColor()
-    for(let [id, user_data] of Object.entries(cur_meeting.user_data)){
+    let promises = [];
+    const fac = new FastAverageColor();
+    for (let [id, user_data] of Object.entries(cur_meeting.user_data)) {
         label_set.push(user_database[id].NAME);
         data_set.push(user_data.speaking_time);
-        fac.getColorAsync(user_database[id].IMG_ID)
-        .then(color => {
-            color_set.push(color.hex);
-        })
-        .catch(e => {
-            console.log(e);
-        });
+        let p = fac.getColorAsync(user_database[id].IMG_ID)
+            .then(color => {
+                color_set.push(color.hex);
+            })
+            .catch(e => {
+                console.log(e);
+            });
+
+
+        promises.push(p);
     }
-    // the getColorAsync function is necessary to get the average color of an unloaded image, but the way it is right now results in color_set being an empty set when the graph is made
-    var ctx = document.getElementById('timeGraph').getContext('2d');
-    let options = {
+    Promise.allSettled(promises).then(()=>{
+        var ctx = document.getElementById('timeGraph').getContext('2d');
+        let options = {
             scales: {
                 xAxes: [{
                     display: true,
@@ -151,39 +177,25 @@ function createChart(){
                 }]
             }
         }
-    timeGraph_obj = new Chart(ctx, {
-        type: 'horizontalBar',
-        data: {
-            labels: label_set,
-            datasets: [{
-                label: '# of seconds spoken per person',
-                data: data_set,
-                backgroundColor: color_set,
-                borderColor: color_set,
-                borderWidth: 1
-            }]
-        },
-        options: options
+        timeGraph_obj = new Chart(ctx, {
+            type: 'horizontalBar',
+            data: {
+                labels: label_set,
+                datasets: [{
+                    label: '# of seconds spoken per person',
+                    data: data_set,
+                    backgroundColor: color_set,
+                    borderColor: color_set,
+                    borderWidth: 1
+                }]
+            },
+            options: options
+        });
+        timeGraph_obj.options.sort = true;
+        timeGraph_obj.update();
+        timeGraph_obj.options.sort = false;
+        updateSpeakerData();
     });
-    timeGraph_obj.options.sort = true;
-    timeGraph_obj.update();
-    timeGraph_obj.options.sort = false;
+    // the getColorAsync function is necessary to get the average color of an unloaded image, but the way it is right now results in color_set being an empty set when the graph is made
+
 }
-chrome.storage.onChanged.addListener(function (changes) {
-    for (var key in changes) {
-        var change = changes[key];
-        if (key === STR.cur_meetings) {
-
-            for (let meet of change.newValue) {
-                if (meet.meeting_code == meet_code) {
-                    cur_meeting = meet;
-                    break;
-                }
-            }
-            updateSpeakerData();
-        } else if (key === STR.users) {
-            user_database = changes.newValue;
-        }
-
-    }
-});

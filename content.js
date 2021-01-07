@@ -13,6 +13,7 @@ class Meeting {
     category = "UNCATEGORIZED";
 }
 let debug = false;
+// let ready_for_output = true;
 try{
     if (window.location.pathname !== "/") {
 
@@ -116,9 +117,10 @@ try{
     
                 user_database = e.detail.user_database;
                 // console.log(user_database);
-                setInStorage(STR.cur_meetings, cur_meetings_data);
-                setInStorage(STR.users, user_database);
-    
+                chrome.storage.local.set({
+                    [STR.cur_meetings]: cur_meetings_data,
+                    [STR.users]: user_database
+                });
             });
         });
     
@@ -158,6 +160,13 @@ function sendScript(name, external = false) {
 }
 function isExpired(meet) {
     return debug||(new Date() - meet.lastUpdated) / (60000) >= 30;
+}
+async function debug1(){
+    let users = await getFromStorage(STR.users);
+    console.log(users["lh6-1iktIIrFuAUAAAAAAAAAAIAAAAAAAAAEYAMZuucmQDOe4JqRVbZ5J9p72-J_liiy-lws192-c-mophotojpg"]);
+    console.log(delete users["lh6-1iktIIrFuAUAAAAAAAAAAIAAAAAAAAAEYAMZuucmQDOe4JqRVbZ5J9p72-J_liiy-lws192-c-mophotojpg"]);
+    console.log(users["lh6-1iktIIrFuAUAAAAAAAAAAIAAAAAAAAAEYAMZuucmQDOe4JqRVbZ5J9p72-J_liiy-lws192-c-mophotojpg"]);
+    await setInStorage(STR.users,users);
 }
 // chrome.storage.local.set({key: value}, function() {
 //     console.log('Value is set to ' + value);
