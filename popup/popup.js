@@ -29,6 +29,7 @@ Chart.plugins.register({ //sorting
             // At this point dataIndexes is sorted by value of the data, so we 
             //know how the indexes map to each other
             let meta = chart.getDatasetMeta(0);
+            console.log(meta);
             let newMeta = [];
             let labels = chart.data.labels;
             let newLabels = [];
