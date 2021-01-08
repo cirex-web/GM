@@ -32,15 +32,19 @@ Chart.plugins.register({ //sorting
             let newMeta = [];
             let labels = chart.data.labels;
             let newLabels = [];
+            let newColors = [];
 
             meta.data.forEach((a, i) => {
                 newMeta[dataIndexes[i]] = a;
                 newLabels[dataIndexes[i]] = chart.data.labels[i];
+                newColors[dataIndexes[i]] = chart.data.datasets[0].backgroundColor[i];
             });
 
             meta.data = newMeta;
             chart.data.datasets[0].data = dataArray;
             chart.data.labels = newLabels;
+            chart.data.datasets[0].backgroundColor = newColors;
+            chart.data.datasets[0].borderColor = newColors;
         }
     }
 });
@@ -130,21 +134,45 @@ window.onload = () => {
     $(".tab[ref='C']").click();
 
 }
+
 function updateSpeakerData() {
     if(!timeGraph_obj){
         return;
     }
     let str = "";
+    let label_set = [];
+    let data_set = [];
+    let color_set = [];
+    let promises = [];
+    const fac = new FastAverageColor();
     for (let [id, user_data] of Object.entries(cur_meeting.user_data)) {
         str += user_database[id].NAME + ": " + user_data.speaking_time + "<br>";
-        
-        timeGraph_obj.data.datasets[0].data[timeGraph_obj.data.labels.indexOf(user_database[id].NAME)] = user_data.speaking_time
+        label_set.push(user_database[id].NAME);
+        data_set.push(user_data.speaking_time);
+        let p = fac.getColorAsync(user_database[id].IMG_ID)
+            .then(color => {
+                color_set.push(color.hex);
+            })
+            .catch(e => {
+                console.log(e);
+            });
+        promises.push(p);
     }
     $("#test").html(str);
-    timeGraph_obj.options.sort = true;
-    timeGraph_obj.update();
-    timeGraph_obj.options.sort = false;
+    Promise.allSettled(promises).then(()=>{
+        console.log(timeGraph_obj.data);
+        timeGraph_obj.data.datasets[0].data = data_set;
+        timeGraph_obj.data.datasets[0].backgroundColor = color_set;
+        timeGraph_obj.data.labels = label_set;
+        timeGraph_obj.data.datasets[0].borderColor = color_set;
+        console.log(timeGraph_obj.data);
+        timeGraph_obj.options.sort = true;
+        timeGraph_obj.update();
+        timeGraph_obj.options.sort = false;
+    }
+    );
 }
+
 function createChart() {
     let label_set = [];
     let data_set = [];
@@ -175,6 +203,9 @@ function createChart() {
                         beginAtZero: true,
                     }
                 }]
+            },
+            animation: {
+                duration: 0
             }
         }
         timeGraph_obj = new Chart(ctx, {
@@ -197,5 +228,4 @@ function createChart() {
         updateSpeakerData();
     });
     // the getColorAsync function is necessary to get the average color of an unloaded image, but the way it is right now results in color_set being an empty set when the graph is made
-
 }
