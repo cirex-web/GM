@@ -29,7 +29,6 @@ Chart.plugins.register({ //sorting
             // At this point dataIndexes is sorted by value of the data, so we 
             //know how the indexes map to each other
             let meta = chart.getDatasetMeta(0);
-            console.log(meta);
             let newMeta = [];
             let labels = chart.data.labels;
             let newLabels = [];
@@ -145,11 +144,17 @@ function updateSpeakerData() {
     let data_set = [];
     let color_set = [];
     let promises = [];
+    let newMeta = [];
+    let newLabels = [];
+    let newColors = [];
+    let meta = timeGraph_obj.getDatasetMeta(0);
+
     const fac = new FastAverageColor();
     for (let [id, user_data] of Object.entries(cur_meeting.user_data)) {
         str += user_database[id].NAME + ": " + user_data.speaking_time + "<br>";
         label_set.push(user_database[id].NAME);
         data_set.push(user_data.speaking_time);
+        
         let p = fac.getColorAsync(user_database[id].IMG_ID)
             .then(color => {
                 color_set.push(color.hex);
@@ -159,17 +164,28 @@ function updateSpeakerData() {
             });
         promises.push(p);
     }
+
+    let dataIndexes = data_set.map((d, i) => i);
+    dataIndexes.sort((a, b) => {
+        return data_set[a] - data_set[b];
+    });
+    data_set.sort((a, b) => a - b);
+
     $("#test").html(str);
     Promise.allSettled(promises).then(()=>{
-        console.log(timeGraph_obj.data);
+        // sorting right here so i dont have to change it twice
+        meta.data.forEach((a, i) => {
+            newMeta[dataIndexes[i]] = a;
+            newLabels[dataIndexes[i]] = label_set[i];
+            newColors[dataIndexes[i]] = colors[i];
+        });
+
+        meta.data = newMeta;
         timeGraph_obj.data.datasets[0].data = data_set;
         timeGraph_obj.data.datasets[0].backgroundColor = color_set;
         timeGraph_obj.data.labels = label_set;
         timeGraph_obj.data.datasets[0].borderColor = color_set;
-        console.log(timeGraph_obj.data);
-        timeGraph_obj.options.sort = true;
         timeGraph_obj.update();
-        timeGraph_obj.options.sort = false;
     }
     );
 }
