@@ -78,13 +78,14 @@ window.onload = () => {
                 user_database = data.user_database;
                 cur_meeting = data.cur_meeting;
                 console.log(data);
-                
+
                 if (!user_database || !cur_meeting) {
                     $("#test").html("No data yet!");
                 } else {
 
                     meet_code = cur_meeting.meeting_code;
                     updateSpeakerData3();
+
                     // createChart();
                     // updateSpeakerData();
 
@@ -92,6 +93,44 @@ window.onload = () => {
             };
         })
     });
+
+    $(document).on("mousemove", function (event) {
+        let bar = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".bar");
+
+        if(bar.length>0){
+            $(".tool-tip").css("opacity", 1);
+            if(!bar.attr("interval")){
+                bar.attr("interval", setInterval(()=>{
+                    let ms = parseInt(bar.attr("data"));
+                    let seconds = parseInt(ms/1000);
+                    let minutes = parseInt(seconds/60);
+                    let hours = parseInt(minutes/60);
+                    minutes%=60;
+                    seconds%=60;
+
+                    minutes = ("00"+minutes).slice(-2);
+                    seconds = ("00"+seconds).slice(-2);
+                    if(hours==0){
+                        $(".tool-tip").html("Speaking time: "+minutes+":"+seconds);
+                    }else{
+                        $(".tool-tip").html("Speaking time: "+hours+":"+minutes+":"+seconds);
+                    }
+                },50));
+            }
+
+        }else{
+            if(bar.attr("interval")){
+                clearInterval(bar.attr("interval"));
+            }
+            $(".tool-tip").css("opacity", 0);
+
+        }
+        $(".tool-tip").css({
+            "left": event.pageX-$(".tool-tip").width()/2,
+            "top": event.pageY+10
+        });
+    });
+
 
     $(".tab").click(function () {
         page = $(this).attr("ref");
@@ -107,52 +146,62 @@ window.onload = () => {
 
 }
 
-function updateSpeakerData3(){
+function updateSpeakerData3() {
     let max = 1;
-    for(let [id,user] of Object.entries(cur_meeting.user_data)){
+    for (let [id, user] of Object.entries(cur_meeting.user_data)) {
         max = Math.max(max, user.speaking_time);
         let found = false;
         let img = user_database[id].IMG_ID;
-        for(let user_stored of timer_graph_data){
-            if(user_stored.ID == id){
+        for (let user_stored of timer_graph_data) {
+            if (user_stored.ID == id) {
                 user_stored.DATA = user;
                 found = true;
                 break;
             }
         }
-        if(!found){
+        if (!found) {
             timer_graph_data.push({
                 ID: id,
-                ID_parsed: id.replace("-","").replace("=",""),
+                ID_parsed: id.replace("-", "").replace("=", ""),
                 DATA: user,
                 IMG: img
             });
         }
     }
-    timer_graph_data.sort((a,b)=>{
-        return b.DATA.speaking_time-a.DATA.speaking_time
+    timer_graph_data.sort((a, b) => {
+        return b.DATA.speaking_time - a.DATA.speaking_time
     })
     displaySpeakerData(max);
 }
-function displaySpeakerData(max){
-    let pos = 20;
+function displaySpeakerData(max) {
+    let pos = 0;
     let margin = 10;
-    let height = 50;
+    let height = Math.min($("#speaker-graph").height()/timer_graph_data.length,50);
 
-    for(let user of timer_graph_data){
-        if($("#"+user.ID_parsed).length==0){
+    for (let user of timer_graph_data) {
+        if ($("#" + user.ID_parsed).length == 0) {
             let $clone = $(document.getElementById("speaker-bar").content.cloneNode(true));
-            $clone.find(".bar").attr("id",user.ID_parsed);
-            $clone.find(".bar-img").attr("src",user.IMG);
+            $clone.find(".bar").attr("id", user.ID_parsed);
+            $clone.find(".bar-img").attr("src", user.IMG);
             $("#speaker-graph").append($clone);
         }
-        $("#"+user.ID_parsed).css("top",pos+"px");
-        $("#"+user.ID_parsed+" .bar-bar").attr('val',user.DATA.speaking_time);
-        $("#"+user.ID_parsed+" .bar-bar").css("width",(user.DATA.speaking_time/max*100)+"%");
-        pos += height+margin;
+        $("#" + user.ID_parsed).css("top", pos + "px");
+        $("#" + user.ID_parsed).css("height",height+"px");
+        $("#" + user.ID_parsed).attr("data", user.DATA.speaking_time);
+
+        $("#" + user.ID_parsed + " .bar-bar").attr('val', user_database[user.ID].NAME);
+        $("#" + user.ID_parsed + " .bar-bar").css("width", (user.DATA.speaking_time / max * 100) + "%");
+
+        if(user.DATA.is_speaking){
+            $("#" + user.ID_parsed + " .bar-bar").css("background","green");
+        }else{
+            $("#" + user.ID_parsed + " .bar-bar").css("background","");
+        }
+        pos += height + margin;
 
         // console.log($("#"+user.ID_parsed+".bar-bar"));
     }
+
 
 }
 
@@ -195,24 +244,24 @@ function displaySpeakerData(max){
 //     }
 // });
 
-function updateSpeakerData2(old_data, new_data){
+function updateSpeakerData2(old_data, new_data) {
     if (!timeGraph_obj) {
         return;
     }
     let ids = [];
     let promises = [];
-    if(old_data){
-        
-        for(let [id,_] of Object.entries(old_data.user_data)){
+    if (old_data) {
+
+        for (let [id, _] of Object.entries(old_data.user_data)) {
             ids.push(id);
         }
     }
-    for(let [id,user] of Object.entries(new_data.user_data)){
-        if(!ids.includes(id)){
+    for (let [id, user] of Object.entries(new_data.user_data)) {
+        if (!ids.includes(id)) {
             promises.push(addUser(user));
         }
     }
-    Promise.allSettled(promises).then(()=>{
+    Promise.allSettled(promises).then(() => {
         // timeGraph_obj.update();
         let meta = timeGraph_obj.getDatasetMeta(0);
         let data = [];
@@ -229,23 +278,23 @@ function updateSpeakerData2(old_data, new_data){
 
     });
 }
-function searchForMeet(change){
+function searchForMeet(change) {
     for (let meet of change) {
         if (meet.meeting_code == meet_code) {
             return meet;
         }
     }
 }
-function addUser(id, user){
-    return new Promise(re=>{
+function addUser(id, user) {
+    return new Promise(re => {
         timeGraph_obj.data.labels.push(user_database[id].NAME);
         timeGraph_obj.data.datasets.forEach(async (dataset) => {
-                dataset.data.push({
-                    y: user.speaking_time
-                });
-                dataset.backgroundColor.push(await fac.getColorAsync(user_database[id].IMG_ID));
-                re();
+            dataset.data.push({
+                y: user.speaking_time
             });
+            dataset.backgroundColor.push(await fac.getColorAsync(user_database[id].IMG_ID));
+            re();
+        });
     })
 
 }
@@ -269,7 +318,7 @@ function updateSpeakerData() {
             x: user_database[id].NAME,
             y: new Date(user_data.speaking_time)
         })
- 
+
         let p = fac.getColorAsync(user_database[id].IMG_ID)
             .then(color => {
                 color_set.push(color.hex);
@@ -292,7 +341,7 @@ function updateSpeakerData() {
         meta.data.forEach((a, i) => {
             newMeta[dataIndexes[i]] = a;
             newLabels[dataIndexes[i]] = label_set[i];
-            newColors[dataIndexes[i]] = color_set[i]; 
+            newColors[dataIndexes[i]] = color_set[i];
         });
 
         meta.data = newMeta;
@@ -310,7 +359,7 @@ function createChart() {
     let labels = [];
     let color_set = [];
     let promises = [];
-    
+
     for (let [id, user_data] of Object.entries(cur_meeting.user_data)) {
         labels.push(user_database[id].NAME);
         data.push({
@@ -355,7 +404,7 @@ function createChart() {
                             second: "mm:ss"
                         },
                         unit: 'second',
-                        
+
                     }
                 }]
             },

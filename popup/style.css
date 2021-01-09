@@ -70,7 +70,7 @@ h1{
 }
 .graph-container{
     width: 90vw;
-    margin: auto;
+    margin: 20px auto;
     height: 400px;
     position: relative;
 }
@@ -114,9 +114,16 @@ h1{
 .image-cropper {
 
     height: 100%;
-    width: 50px;
+    width: auto;
     position: relative;
     overflow: hidden;
     border-radius: 50%;
     flex-grow: 0;
   }
+.tool-tip{
+    position: fixed;
+    opacity: 0;
+    transition: .2s all;
+    background: white;
+    padding: 10px;
+}
