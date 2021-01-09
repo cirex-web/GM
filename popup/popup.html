@@ -8,8 +8,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
   <script src="/external/jquery.js"></script>
-  <script src="/external/Chart.min.js"></script>
   <script src="/external/index.min.js"></script>
+  <script src="/external/moment.js"></script>
+  <script src="/external/Chart.min.js"></script>
   <script src="popup.js"></script>
 
   <!-- <script src="https://kit.fontawesome.com/b35280581b.js"></script> -->
@@ -39,8 +40,11 @@
   <div class="tab-container" ref="C">
 
     <div class="content-container">
+      <div id="speaker-graph" class="graph-container">
+        
+        <!-- <canvas id="timeGraph"></canvas> -->
 
-      <canvas id="timeGraph" width="400" height="600"></canvas>
+      </div>
     </div>
     <div class="full-disp">
       asdf
@@ -51,4 +55,15 @@
   <div class="tab-container" ref="A">
   </div>
   </div>
+  <template id="speaker-bar">
+    <div class="bar">
+      <div class="image-cropper">
+        <img draggable="false" class="bar-img" src="https://lh3.googleusercontent.com/a-/AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo">
+      </div>
+      <div class="bar-bar-container">
+        <div class="bar-bar" val="0"></div>
+
+      </div>
+    </div>
+  </template>
 </body>

@@ -16,7 +16,7 @@
     ],
     "content_security_policy": "style-src 'self' https://kit.fontawesome.com; 'unsafe-inline'",
     "web_accessible_resources": [
-        "script.js","/external/jquery.js","/external/arrive.js","https://kit.fontawesome.com","/popup/popup.js"
+        "script.js","/external/jquery.js","/external/arrive.js","https://kit.fontawesome.com","/popup/popup.js","/external/moment.js"
       ]
  
 }

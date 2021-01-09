@@ -7,10 +7,13 @@ let STR = {
     all_other_meetings: "other_meetings"
 }
 class Meeting {
-    lastUpdated = + new Date();
+    lastUpdated = + new Date(); //TODO: change to last_updated but then that breaks all previous objects
     meeting_code = undefined;
     user_data = {};
     category = "UNCATEGORIZED";
+    teacher_IDs = []; 
+    nickname = undefined;
+    start_time = undefined;
 }
 let debug = false;
 // let ready_for_output = true;

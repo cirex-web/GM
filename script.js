@@ -64,6 +64,10 @@ let ELEMENTS = {
     PEOPLE_NUM: {
         str:"EydYod",
         type:"jsname"
+    },
+    MEETING_NICKNAME:{
+        str: "rQC7Ie",
+        type:"jsname"
     }
 }
 class El {
@@ -208,11 +212,9 @@ function prepareToRun() {
 
 }
 async function run() {
-    console.log("who let the dogs out");
     while (true) {
         try {
             if (inCall()) {
-                console.log("who");
 
                 if (!local.sidebar_init.phase_two) { //Should only be like this in the beginning
                     ELEMENTS.SHOW_USERS.getEl().click();
@@ -236,6 +238,11 @@ async function run() {
     
                     });
                 }
+                let nickname = ELEMENTS.MEETING_NICKNAME.getEl().html().toString();
+                meeting_data.nickname = nickname.includes(" ")?undefined:nickname;
+                if(!meeting_data.start_time){
+                    meeting_data.start_time = + new Date();
+                }
                 // jQuery.fn.removeAttributes = function() {
                 //     return this.each(function() {
                 //       var attributes = $.map(this.attributes, function(item) {
@@ -252,7 +259,7 @@ async function run() {
 
                 if (!local.clicked_sidebar && !local.sidebar_hidden) {
                     ELEMENTS.SIDE_BAR.getEl().css("transition-delay", "0s");
-                    ELEMENTS.SIDE_BAR.getEl().css("height", "1000px");
+                    // ELEMENTS.SIDE_BAR.getEl().css("height", "1000px");
 
                     ELEMENTS.SIDE_BAR.getEl().css("transform", "translate3d(100%,0,0)");
                     // ELEMENTS.SIDE_BAR.getEl().css("transform", "translate3d(0,0,0)");
@@ -274,6 +281,7 @@ async function run() {
             await wait(100);
         } catch (e) {
             console.log(e);
+            await wait(1000);
         }
     }
 
@@ -282,9 +290,7 @@ function init_sidebar() {
     return new Promise((re) => {
         let side = ELEMENTS.SIDE_BAR.getEl();
         side.arrive(ELEMENTS.CLOSE.formQuery(), { existing: true, onceOnly: true }, () => {
-            console.log("starting loop");
             const loop = setInterval(() => {
-                console.log("running loop", loop);
                 ELEMENTS.CLOSE.getEl().click();
                 if (local.sidebar_init.phase_two) {
                     clearInterval(loop);
@@ -435,7 +441,9 @@ function stopTrackingUserTime(user, list_container) {
         user.cur_interval = -1;
         user.is_speaking = false;
         user.before_time = false;
+        updateStorage();
     }
+
 
 }
 function getUserImage(list_el, full = false) {
