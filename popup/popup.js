@@ -49,7 +49,7 @@ Value:{
 }
 
 */
-window.onload = () => { 
+window.onload = () => {
     chrome.storage.onChanged.addListener(function (changes) {
         let prev_meeting;
 
@@ -79,90 +79,74 @@ window.onload = () => {
                 $("#full-disp").html("You aren't in a call yet!");
 
             } else {
-                user_database = data.user_database;
+                // user_database = data.user_database;
                 cur_meeting = data.cur_meeting;
-                console.log("data retrieved: "+data);
+                console.log("data retrieved: " + data);
 
-                meeting_database = await getFromStorage(STR.all_other_meetings);
-                setUpMeetingsPage();
 
-                if (!user_database || !cur_meeting) {
+
+                if (!cur_meeting) {
                     $("#full-disp").html("No data yet!");
                 } else {
-                    $("#full-disp").css('display','none');
+                    $("#full-disp").css('display', 'none');
                     meet_code = cur_meeting.meeting_code;
-                    
-                    updateSpeakerData3(cur_meeting,$("#speaker-graph"));
+
+                    updateSpeakerData3(cur_meeting, $("#speaker-graph"));
                     $(".selected-class p").html(cur_meeting.category);
                 }
             };
+            meeting_database = await getFromStorage(STR.all_other_meetings);
+            user_database = await getFromStorage(STR.users);
+            setUpMeetingsPage();
             $("[ref='C']").click();
         })
     });
 
     $(document).on("mousemove", function (event) {
-        console.log(event.clientX, event.clientY);
         let bar = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".bar");
-        
+
         let $graph = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".element-container").find(".graph-container");
 
         let $tool_tip = $graph.find(".tool-tip");
 
-        if(bar.length>0){
+        if (bar.length > 0) {
             $tool_tip.css("opacity", 1);
-            if(!$tool_tip.attr("cur_interval")){
-                let interval = setInterval(()=>{
+            if (!$tool_tip.attr("cur_interval")) {
+                let interval = setInterval(() => {
                     let ms = parseInt(bar.attr("data"));
-                    let seconds = parseInt(ms/1000);
-                    let minutes = parseInt(seconds/60);
-                    let hours = parseInt(minutes/60);
-                    minutes%=60;
-                    seconds%=60;
+                    let seconds = parseInt(ms / 1000);
+                    let minutes = parseInt(seconds / 60);
+                    let hours = parseInt(minutes / 60);
+                    minutes %= 60;
+                    seconds %= 60;
 
-                    minutes = ("00"+minutes).slice(-2);
-                    seconds = ("00"+seconds).slice(-2);
-                    
-                    if(hours==0){
-                        $tool_tip.html("Speaking time: "+minutes+":"+seconds);
-                    }else{
-                        $tool_tip.html("Speaking time: "+hours+":"+minutes+":"+seconds);
+                    minutes = ("00" + minutes).slice(-2);
+                    seconds = ("00" + seconds).slice(-2);
+
+                    if (hours == 0) {
+                        $tool_tip.html("Speaking time: " + minutes + ":" + seconds);
+                    } else {
+                        $tool_tip.html("Speaking time: " + hours + ":" + minutes + ":" + seconds);
                     }
-                },50);
-                $tool_tip.attr("cur_interval",interval);
+                }, 50);
+                $tool_tip.attr("cur_interval", interval);
             }
 
-        }else{
+        } else {
 
             let interval = $tool_tip.attr("cur_interval");
-            if(interval){
+            if (interval) {
                 clearInterval(interval);
-                $tool_tip.attr("cur_interval","");
+                $tool_tip.attr("cur_interval", "");
             }
             $(".tool-tip").css("opacity", 0);
         }
         $tool_tip.css({
-            "left": event.clientX-$tool_tip.width()/2,
-            "top": event.clientY+10
+            "left": event.clientX - $tool_tip.width() / 2,
+            "top": event.clientY + 10
         });
     });
-    $(".selected-class").on("click",function(){
-        let $menu = $(this).parent().find(".drop-menu");
-        if($menu.css("max-height")=="0px"){
-            
-            for(let cat of Object.keys(meeting_database)){
-                let clone = $("#drop-menu-item")[0].content.cloneNode(true);
-                clone.querySelector(".drop-menu-item").innerHTML = cat;
-                $menu.append(clone);
-            }
-            $menu.css("max-height","200px");
-        }else{
-            $menu.css("max-height","0px");
-            setTimeout(()=>{
-                $menu.html("");
-
-            },400);
-        }
-    });
+    $(".selected-class").on("click", toggleTabs);
     $(".tab").click(function () {
         page = $(this).attr("ref");
 
@@ -174,40 +158,86 @@ window.onload = () => {
         $(this).addClass("selected");
     });
 
-    
+
 }
-function setUpMeetingsPage(){
-    for(let cat of Object.keys(meeting_database)){
-        for(let meeting of meeting_database[cat]){
+function toggleTabs() {
+
+    let $menu = $(this).parent().find(".drop-menu");
+    if ($menu.css("max-height") == "0px") {
+
+        for (let cat of Object.keys(meeting_database)) {
+            let clone = $("#drop-menu-item")[0].content.cloneNode(true);
+            clone.querySelector(".drop-menu-item").innerHTML = cat;
+            $menu.append(clone);
+        }
+        $menu.css("max-height", "200px");
+        $(".drop-menu-item").on('click', function () {
+            cur_meeting.category = $(this).html();
+            let class_header = $(this).closest(".class-selector").find(".selected-class").click();
+            class_header.find("p").html(cur_meeting.category);
+        });
+    } else {
+        $menu.css("max-height", "0px");
+        setTimeout(() => {
+            console.log($menu.children());
+            for (let item of $menu.children()) {
+                let $item = $(item);
+                if ($item.attr("type") != "add-new") {
+                    $item.remove();
+                }
+            }
+
+
+        }, 400);
+    }
+
+}
+function setUpMeetingsPage() {
+    for (let cat of Object.keys(meeting_database)) {
+        for (let meeting of meeting_database[cat]) {
             sorted_meetings.push(meeting);
         }
     }
-    sorted_meetings.sort((a,b)=>b.lastUpdated-a.lastUpdated);
+    sorted_meetings.sort((a, b) => b.lastUpdated - a.lastUpdated);
 
-    for(let [i,meeting] of sorted_meetings.entries()){
+    for (let [i, meeting] of sorted_meetings.entries()) {
         let clone = $("#meeting-data")[0].content.cloneNode(true);
         let $clone = $(clone);
-        $clone.find(".meeting-top p").html(meeting.category+" Meeting");
+        $clone.find(".meeting-top p").html(meeting.category + " Meeting");
         $clone.find(".date").html(meeting.lastUpdated);
         $clone.find(".code").html(meeting.meeting_code);
-        $clone.find(".graph-container").attr('id',i);
+        $clone.find(".graph-container").attr('id', i);
+        $clone.find(".selected-class").on('click',toggleTabs);
         $("[ref='H'].tab-container").append($clone);
-        
+
     }
-    $(".meeting-top").on('click',function(){
+    $(".meeting-top").on('click', function () {
         let bottom = $(this).parent().find(".meeting-data");
 
-        if(bottom.css("max-height")=="0px"){
-            bottom.css("max-height","600px");
+        if (bottom.css("max-height") == "0px") {
+            bottom.css("max-height", "600px");
             let graph = bottom.find(".graph-container");
             // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
-            updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))],graph,5,true);
+            updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))], graph, 5, true);
 
             // bottom.css('max-height',bottom.height());
-        }else{
-            bottom.css("max-height",0);
+        } else {
+            bottom.css("max-height", 0);
 
         }
+    });
+    $(".class-selector").on('mouseover mouseleave',function(ev){
+        console.log(ev);
+        $this = $(this);
+        if(ev.type=="mouseover"){
+            $this.css("border-color","black");
+            $this.find(".select-symbol").css("opacity",1);
+        }else{
+            $this.css("border-color","transparent");
+            $this.find(".select-symbol").css("opacity",0);
+
+        }
+
     });
 }
 function getFromStorage(key) {
@@ -221,7 +251,7 @@ function getFromStorage(key) {
 function updateSpeakerData3(meeting, item, max_items = 20, one_time = false) {
     let max = 1;
     let users = timer_graph_data;
-    if(one_time){
+    if (one_time) {
         users = [];
     }
     for (let [id, user] of Object.entries(meeting.user_data)) {
@@ -247,19 +277,19 @@ function updateSpeakerData3(meeting, item, max_items = 20, one_time = false) {
     users.sort((a, b) => {
         return b.DATA.speaking_time - a.DATA.speaking_time
     })
-    displaySpeakerData(users, item,max,max_items);
+    displaySpeakerData(users, item, max, max_items);
 }
 function displaySpeakerData(users, item, max, max_items) {
     console.log(users);
     let item_num = Math.min(users.length, max_items);
     let pos = 0;
     let margin = 10;
-    let height = Math.min(item.height()/item_num,50);
+    let height = Math.min(item.height() / item_num, 50);
     let count = 0;
     for (let user of users) {
-        if(count==max_items){
+        if (count == max_items) {
             break;
-        }else{
+        } else {
             count++;
         }
         if (item.find("#" + user.ID_parsed).length == 0) {
@@ -270,23 +300,23 @@ function displaySpeakerData(users, item, max, max_items) {
 
         }
         item.find("#" + user.ID_parsed).css("top", pos + "px");
-        item.find("#" + user.ID_parsed).css("height",height+"px");
+        item.find("#" + user.ID_parsed).css("height", height + "px");
         item.find("#" + user.ID_parsed).attr("data", user.DATA.speaking_time);
         // $("#" + user.ID_parsed + " .bar-bar")[0].animate([
         //     {width: $("#" + user.ID_parsed + " .bar-bar").width()+"px"},
 
         //     {width: (user.DATA.speaking_time / max * 100) + '%'}
-            
+
         //   ], 500);
         item.find("#" + user.ID_parsed + " .bar-bar").css("width", (user.DATA.speaking_time / max * 100) + "%");
 
         item.find("#" + user.ID_parsed + " .bar-bar").attr('val', user_database[user.ID].NAME);
-        item.find("#" + user.ID_parsed + " .bar-bar").css("width", );
-        if(item.attr("id")=="speaker-graph"){
-            if(user.DATA.is_speaking){
-                $("#" + user.ID_parsed + " .bar-bar").css("background","green");
-            }else{
-                $("#" + user.ID_parsed + " .bar-bar").css("background","");
+        item.find("#" + user.ID_parsed + " .bar-bar").css("width",);
+        if (item.attr("id") == "speaker-graph") {
+            if (user.DATA.is_speaking) {
+                $("#" + user.ID_parsed + " .bar-bar").css("background", "green");
+            } else {
+                $("#" + user.ID_parsed + " .bar-bar").css("background", "");
             }
         }
 

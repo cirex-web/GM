@@ -36,15 +36,17 @@
 
   <div class="tab-container" ref="C">
 
-    <div class="element-container">
-      <!-- <div>Current Class: </div> -->
-      <div class="class-selector">
+    <div class="element-container no-border flex">
+      <h2>Current Class: </h2>
+      <div class="class-selector grow">
         <div class="selected-class">
           <p>Classss</p>
-          <i class="fas fa-angle-down"></i>
+          <i class="fas fa-angle-down select-symbol"></i>
         </div>
         <div class="drop-menu">
-
+          <div type="add-new" class="drop-menu-item">
+            Add Class...
+          </div>
         </div>
       </div>
 
@@ -83,10 +85,23 @@
     </div>
   </template>
   <template id="meeting-data">
-    <div class="element-container">
+    <div class="element-container no-border">
       <div class="meeting-top">
-        <p>AAA Meeting</p>
-        <i class="fas fa-trash"></i>
+        <div class="class-selector">
+          <div class="selected-class">
+            <p>Classss</p>
+            <i class="fas fa-angle-down select-symbol">></i>
+          </div>
+          <div class="drop-menu">
+            <div type="add-new" class="drop-menu-item">
+              Add Class...
+            </div>
+          </div>
+        </div>
+        <div class="filler">
+          <i class="fas fa-trash">T</i>
+
+        </div>
       </div>
       <div class="meeting-data">
         <div class="meeting-details">Date: <span class="date">ITE</span>

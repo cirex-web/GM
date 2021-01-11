@@ -22,6 +22,11 @@ h1{
     padding: 10px 0;
     margin: 0;
 }
+h2{
+    margin: 0;
+    padding: 10px;
+    font-size: 20px;
+}
 .title{
     padding: 10px 0;
     margin: 0 10px;
@@ -143,14 +148,18 @@ h1{
     z-index: 99;
 }
 .class-selector{
+    border: 2px solid transparent;
     text-align: left;
     color: black;
     font-size: 20px;
+    position: relative;
+    box-sizing: content-box;
+    transition: .3s all;
 }
+
 .selected-class{
-    background: white;
+    background: transparent;
     font-weight: bold;
-    border-bottom: 2px solid black;
     padding: 10px;
     width: 100%;
     display: flex;
@@ -160,12 +169,16 @@ h1{
     cursor: pointer;
 }
 .drop-menu{
-    max-height: 0px;
-    width: 100%;
+    /* border-top: 2px solid black; */
     background: white;
+    max-height: 0px;
+        width: 100%;
     transition: .4s all;
     overflow: scroll;
-
+    position: absolute;
+    z-index: 2;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
 }
 .drop-menu-item{
     width: 100%;
@@ -190,6 +203,15 @@ p{
     background: rgb(187, 187, 187);
 
 }
+.element-container.no-border{
+    border: none;
+    overflow: visible;
+}
+.element-container.flex{
+    justify-content: center;
+    display: flex;
+    align-items: center;
+}
 .meeting-top{
     display: flex;
     padding: 10px;
@@ -209,4 +231,18 @@ p{
 .meeting-details{
     padding: 10px;
 
+}
+.grow{
+    flex-grow: 1;
+}
+.filler{
+    flex-grow: 1;
+    text-align: right;
+}
+i{
+    background: aliceblue;
+}
+.select-symbol{
+    opacity: 0;
+    transition: .4s all;
 }
