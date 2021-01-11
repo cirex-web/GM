@@ -1,13 +1,16 @@
 let STR = {
     cur_meetings: "cur_meetings",
-    users: "users"
+    users: "users",
+    all_other_meetings: "other_meetings"
 }
 //TODO: deal with page refresh... should refresh data or something
 
-let user_database, cur_meeting, meet_code; //these are the variables that contain the current meeting data (they're updated automatically and updateSpeakerData() is called everytime there's an update.)
+let user_database, cur_meeting, meet_code, meeting_database; //these are the variables that contain the current meeting data (they're updated automatically and updateSpeakerData() is called everytime there's an update.)
 let timeGraph_obj;
 let page;
 let timer_graph_data = [];
+let sorted_meetings = [];
+
 let header_names = {
     'D': "Debug",
     'C': "Current Meeting",
@@ -46,7 +49,7 @@ Value:{
 }
 
 */
-window.onload = () => {
+window.onload = () => { 
     chrome.storage.onChanged.addListener(function (changes) {
         let prev_meeting;
 
@@ -61,6 +64,7 @@ window.onload = () => {
             } else if (key === STR.users) {
                 user_database = cur_change;
                 console.log("updated user_database to ", user_database);
+
             }
         }
         updateSpeakerData3();
@@ -69,38 +73,45 @@ window.onload = () => {
         // updateSpeakerData();
     });
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, function (data) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, async function (data) {
 
             if (chrome.runtime.lastError) {
-                $("#test").html("You aren't in a call yet!");
+                $("#full-disp").html("You aren't in a call yet!");
 
             } else {
                 user_database = data.user_database;
                 cur_meeting = data.cur_meeting;
-                console.log(data);
+                console.log("data retrieved: "+data);
+
+                meeting_database = await getFromStorage(STR.all_other_meetings);
+                setUpMeetingsPage();
 
                 if (!user_database || !cur_meeting) {
-                    $("#test").html("No data yet!");
+                    $("#full-disp").html("No data yet!");
                 } else {
-
+                    $("#full-disp").css('display','none');
                     meet_code = cur_meeting.meeting_code;
-                    updateSpeakerData3();
-
-                    // createChart();
-                    // updateSpeakerData();
-
+                    
+                    updateSpeakerData3(cur_meeting,$("#speaker-graph"));
+                    $(".selected-class p").html(cur_meeting.category);
                 }
             };
+            $("[ref='C']").click();
         })
     });
 
     $(document).on("mousemove", function (event) {
+        console.log(event.clientX, event.clientY);
         let bar = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".bar");
+        
+        let $graph = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".element-container").find(".graph-container");
+
+        let $tool_tip = $graph.find(".tool-tip");
 
         if(bar.length>0){
-            $(".tool-tip").css("opacity", 1);
-            if(!bar.attr("interval")){
-                bar.attr("interval", setInterval(()=>{
+            $tool_tip.css("opacity", 1);
+            if(!$tool_tip.attr("cur_interval")){
+                let interval = setInterval(()=>{
                     let ms = parseInt(bar.attr("data"));
                     let seconds = parseInt(ms/1000);
                     let minutes = parseInt(seconds/60);
@@ -110,28 +121,48 @@ window.onload = () => {
 
                     minutes = ("00"+minutes).slice(-2);
                     seconds = ("00"+seconds).slice(-2);
+                    
                     if(hours==0){
-                        $(".tool-tip").html("Speaking time: "+minutes+":"+seconds);
+                        $tool_tip.html("Speaking time: "+minutes+":"+seconds);
                     }else{
-                        $(".tool-tip").html("Speaking time: "+hours+":"+minutes+":"+seconds);
+                        $tool_tip.html("Speaking time: "+hours+":"+minutes+":"+seconds);
                     }
-                },50));
+                },50);
+                $tool_tip.attr("cur_interval",interval);
             }
 
         }else{
-            if(bar.attr("interval")){
-                clearInterval(bar.attr("interval"));
+
+            let interval = $tool_tip.attr("cur_interval");
+            if(interval){
+                clearInterval(interval);
+                $tool_tip.attr("cur_interval","");
             }
             $(".tool-tip").css("opacity", 0);
-
         }
-        $(".tool-tip").css({
-            "left": event.pageX-$(".tool-tip").width()/2,
-            "top": event.pageY+10
+        $tool_tip.css({
+            "left": event.clientX-$tool_tip.width()/2,
+            "top": event.clientY+10
         });
     });
+    $(".selected-class").on("click",function(){
+        let $menu = $(this).parent().find(".drop-menu");
+        if($menu.css("max-height")=="0px"){
+            
+            for(let cat of Object.keys(meeting_database)){
+                let clone = $("#drop-menu-item")[0].content.cloneNode(true);
+                clone.querySelector(".drop-menu-item").innerHTML = cat;
+                $menu.append(clone);
+            }
+            $menu.css("max-height","200px");
+        }else{
+            $menu.css("max-height","0px");
+            setTimeout(()=>{
+                $menu.html("");
 
-
+            },400);
+        }
+    });
     $(".tab").click(function () {
         page = $(this).attr("ref");
 
@@ -142,17 +173,62 @@ window.onload = () => {
         $(".tab-container[ref=" + page + "]").css("display", "block");
         $(this).addClass("selected");
     });
-    $(".tab[ref='C']").click();
 
+    
+}
+function setUpMeetingsPage(){
+    for(let cat of Object.keys(meeting_database)){
+        for(let meeting of meeting_database[cat]){
+            sorted_meetings.push(meeting);
+        }
+    }
+    sorted_meetings.sort((a,b)=>b.lastUpdated-a.lastUpdated);
+
+    for(let [i,meeting] of sorted_meetings.entries()){
+        let clone = $("#meeting-data")[0].content.cloneNode(true);
+        let $clone = $(clone);
+        $clone.find(".meeting-top p").html(meeting.category+" Meeting");
+        $clone.find(".date").html(meeting.lastUpdated);
+        $clone.find(".code").html(meeting.meeting_code);
+        $clone.find(".graph-container").attr('id',i);
+        $("[ref='H'].tab-container").append($clone);
+        
+    }
+    $(".meeting-top").on('click',function(){
+        let bottom = $(this).parent().find(".meeting-data");
+
+        if(bottom.css("max-height")=="0px"){
+            bottom.css("max-height","600px");
+            let graph = bottom.find(".graph-container");
+            // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
+            updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))],graph,5,true);
+
+            // bottom.css('max-height',bottom.height());
+        }else{
+            bottom.css("max-height",0);
+
+        }
+    });
+}
+function getFromStorage(key) {
+    return new Promise((re) => {
+        chrome.storage.local.get(key, function (result) {
+            re(result[key]);
+        });
+    });
 }
 
-function updateSpeakerData3() {
+function updateSpeakerData3(meeting, item, max_items = 20, one_time = false) {
     let max = 1;
-    for (let [id, user] of Object.entries(cur_meeting.user_data)) {
+    let users = timer_graph_data;
+    if(one_time){
+        users = [];
+    }
+    for (let [id, user] of Object.entries(meeting.user_data)) {
         max = Math.max(max, user.speaking_time);
         let found = false;
         let img = user_database[id].IMG_ID;
-        for (let user_stored of timer_graph_data) {
+        for (let user_stored of users) {
             if (user_stored.ID == id) {
                 user_stored.DATA = user;
                 found = true;
@@ -160,7 +236,7 @@ function updateSpeakerData3() {
             }
         }
         if (!found) {
-            timer_graph_data.push({
+            users.push({
                 ID: id,
                 ID_parsed: id.replace("-", "").replace("=", ""),
                 DATA: user,
@@ -168,42 +244,87 @@ function updateSpeakerData3() {
             });
         }
     }
-    timer_graph_data.sort((a, b) => {
+    users.sort((a, b) => {
         return b.DATA.speaking_time - a.DATA.speaking_time
     })
-    displaySpeakerData(max);
+    displaySpeakerData(users, item,max,max_items);
 }
-function displaySpeakerData(max) {
+function displaySpeakerData(users, item, max, max_items) {
+    console.log(users);
+    let item_num = Math.min(users.length, max_items);
     let pos = 0;
     let margin = 10;
-    let height = Math.min($("#speaker-graph").height()/timer_graph_data.length,50);
-
-    for (let user of timer_graph_data) {
-        if ($("#" + user.ID_parsed).length == 0) {
+    let height = Math.min(item.height()/item_num,50);
+    let count = 0;
+    for (let user of users) {
+        if(count==max_items){
+            break;
+        }else{
+            count++;
+        }
+        if (item.find("#" + user.ID_parsed).length == 0) {
             let $clone = $(document.getElementById("speaker-bar").content.cloneNode(true));
             $clone.find(".bar").attr("id", user.ID_parsed);
             $clone.find(".bar-img").attr("src", user.IMG);
-            $("#speaker-graph").append($clone);
-        }
-        $("#" + user.ID_parsed).css("top", pos + "px");
-        $("#" + user.ID_parsed).css("height",height+"px");
-        $("#" + user.ID_parsed).attr("data", user.DATA.speaking_time);
+            item.append($clone);
 
-        $("#" + user.ID_parsed + " .bar-bar").attr('val', user_database[user.ID].NAME);
-        $("#" + user.ID_parsed + " .bar-bar").css("width", (user.DATA.speaking_time / max * 100) + "%");
-
-        if(user.DATA.is_speaking){
-            $("#" + user.ID_parsed + " .bar-bar").css("background","green");
-        }else{
-            $("#" + user.ID_parsed + " .bar-bar").css("background","");
         }
+        item.find("#" + user.ID_parsed).css("top", pos + "px");
+        item.find("#" + user.ID_parsed).css("height",height+"px");
+        item.find("#" + user.ID_parsed).attr("data", user.DATA.speaking_time);
+        // $("#" + user.ID_parsed + " .bar-bar")[0].animate([
+        //     {width: $("#" + user.ID_parsed + " .bar-bar").width()+"px"},
+
+        //     {width: (user.DATA.speaking_time / max * 100) + '%'}
+            
+        //   ], 500);
+        item.find("#" + user.ID_parsed + " .bar-bar").css("width", (user.DATA.speaking_time / max * 100) + "%");
+
+        item.find("#" + user.ID_parsed + " .bar-bar").attr('val', user_database[user.ID].NAME);
+        item.find("#" + user.ID_parsed + " .bar-bar").css("width", );
+        if(item.attr("id")=="speaker-graph"){
+            if(user.DATA.is_speaking){
+                $("#" + user.ID_parsed + " .bar-bar").css("background","green");
+            }else{
+                $("#" + user.ID_parsed + " .bar-bar").css("background","");
+            }
+        }
+
         pos += height + margin;
 
-        // console.log($("#"+user.ID_parsed+".bar-bar"));
     }
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //The below code is not currently being used
