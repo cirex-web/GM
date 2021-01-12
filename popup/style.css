@@ -266,9 +266,9 @@ p{
     flex-grow: 1;
     text-align: right;
 }
-i{
+/* i{
     background: aliceblue;
-}
+} */
 .select-symbol{
     opacity: 0;
     transition: .4s all;
