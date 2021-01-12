@@ -67,7 +67,7 @@ window.onload = () => {
 
             }
         }
-        updateSpeakerData3();
+        updateSpeakerData3(cur_meeting, $("#speaker-graph"));
         // console.log(timeGraph_obj.data);
         // updateSpeakerData2(prev_meeting, cur_meeting);
         // updateSpeakerData();
@@ -79,7 +79,7 @@ window.onload = () => {
                 $("#full-disp").html("You aren't in a call yet!");
 
             } else {
-                // user_database = data.user_database;
+                user_database = data.user_database;
                 cur_meeting = data.cur_meeting;
                 console.log("data retrieved: " + data);
 
@@ -98,6 +98,15 @@ window.onload = () => {
             meeting_database = await getFromStorage(STR.all_other_meetings);
             user_database = await getFromStorage(STR.users);
             setUpMeetingsPage();
+            $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
+                if ($(ev.target).closest("[type='add-new']").length==0) {
+                    cur_meeting.category = $(ev.target).html(); //TODO:
+                    let class_header = $(this).closest(".class-selector").find(".selected-class");
+                    class_header.find("p").html(cur_meeting.category);
+                    console.log("in");
+                    toggleMenu($(ev.target));
+                }
+            });
             $("[ref='C']").click();
         })
     });
@@ -146,7 +155,7 @@ window.onload = () => {
             "top": event.clientY + 10
         });
     });
-    $(".selected-class").on("click", toggleTabs);
+    $(".selected-class").on("click", toggleMenu);
     $(".tab").click(function () {
         page = $(this).attr("ref");
 
@@ -160,33 +169,31 @@ window.onload = () => {
 
 
 }
-function toggleTabs() {
+function toggleMenu(this1) {
 
-    let $menu = $(this).parent().find(".drop-menu");
-    if ($menu.css("max-height") == "0px") {
+    console.log("toggling");
+    let $menu = $(this).closest(".class-selector").find(".drop-menu");
+    if ($menu.length == 0) {
+        $menu = this1.closest(".class-selector").find(".drop-menu");
+    }
+    $menu.toggleClass("active");
+
+    if ($menu.hasClass("active")) {
 
         for (let cat of Object.keys(meeting_database)) {
             let clone = $("#drop-menu-item")[0].content.cloneNode(true);
             clone.querySelector(".drop-menu-item").innerHTML = cat;
             $menu.append(clone);
         }
-        $menu.css("max-height", "200px");
-        $(".drop-menu-item").on('click', function () {
-            cur_meeting.category = $(this).html();
-            let class_header = $(this).closest(".class-selector").find(".selected-class").click();
-            class_header.find("p").html(cur_meeting.category);
-        });
+
     } else {
-        $menu.css("max-height", "0px");
         setTimeout(() => {
-            console.log($menu.children());
             for (let item of $menu.children()) {
                 let $item = $(item);
                 if ($item.attr("type") != "add-new") {
                     $item.remove();
                 }
             }
-
 
         }, 400);
     }
@@ -203,39 +210,45 @@ function setUpMeetingsPage() {
     for (let [i, meeting] of sorted_meetings.entries()) {
         let clone = $("#meeting-data")[0].content.cloneNode(true);
         let $clone = $(clone);
-        $clone.find(".meeting-top p").html(meeting.category + " Meeting");
+        $clone.find(".meeting-top p").html(meeting.category);
         $clone.find(".date").html(meeting.lastUpdated);
         $clone.find(".code").html(meeting.meeting_code);
         $clone.find(".graph-container").attr('id', i);
-        $clone.find(".selected-class").on('click',toggleTabs);
+        // $clone.find(".selected-class").on('click',);
         $("[ref='H'].tab-container").append($clone);
 
     }
-    $(".meeting-top").on('click', function () {
-        let bottom = $(this).parent().find(".meeting-data");
+    $(".meeting-top").on('click', function (ev) {
+        let $bottom = $(this).parent().find(".meeting-data");
+        let $drop_menu = $(this).find(".drop-menu");
+        let class_selector = $(ev.target).closest(".selected-class");
+        if (class_selector.length > 0 && $bottom.hasClass("active")) {
 
-        if (bottom.css("max-height") == "0px") {
-            bottom.css("max-height", "600px");
-            let graph = bottom.find(".graph-container");
-            // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
-            updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))], graph, 5, true);
+            toggleMenu(class_selector);
 
-            // bottom.css('max-height',bottom.height());
-        } else {
-            bottom.css("max-height", 0);
+        } else if(!$drop_menu.hasClass('active')){
+            $bottom.toggleClass("active");
+            if ($bottom.hasClass("active")) {
+                let graph = $bottom.find(".graph-container");
+                // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
+                updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))], graph, 5, true);
 
+            }
         }
-    });
-    $(".class-selector").on('mouseover mouseleave',function(ev){
-        console.log(ev);
-        $this = $(this);
-        if(ev.type=="mouseover"){
-            $this.css("border-color","black");
-            $this.find(".select-symbol").css("opacity",1);
-        }else{
-            $this.css("border-color","transparent");
-            $this.find(".select-symbol").css("opacity",0);
 
+
+
+    });
+    $(".class-selector").on('mouseover mouseleave', function (ev) {
+        $this = $(this);
+        if (ev.type == "mouseover" && $this.closest(".element-container").find(".meeting-data").hasClass("active")) {
+
+            $this.addClass("active");
+        } else {
+            if (!$this.find(".drop-menu").hasClass('active')) {
+                $this.removeClass("active");
+
+            }
         }
 
     });

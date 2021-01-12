@@ -27,6 +27,11 @@ h2{
     padding: 10px;
     font-size: 20px;
 }
+p{
+    margin: 0;
+    flex-grow: 1;
+    position: relative;
+}
 .title{
     padding: 10px 0;
     margin: 0 10px;
@@ -156,7 +161,15 @@ h2{
     box-sizing: content-box;
     transition: .3s all;
 }
-
+.class-selector.active{
+    border-color: black;
+}
+.class-selector.active .select-symbol{
+    opacity: 1;
+}
+.class-selector.active .selected-class p::after{
+    opacity: 0;
+}
 .selected-class{
     background: transparent;
     font-weight: bold;
@@ -168,17 +181,30 @@ h2{
 .selected-class:hover{
     cursor: pointer;
 }
+.selected-class p::after{
+    left: 100%;
+    content: attr(txt);
+    position: absolute;
+    transform: translate(1vw,0);
+    transition: .3s all;
+
+
+
+}
 .drop-menu{
     /* border-top: 2px solid black; */
     background: white;
     max-height: 0px;
-        width: 100%;
+    width: 100%;
     transition: .4s all;
     overflow: scroll;
     position: absolute;
     z-index: 2;
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
+}
+.drop-menu.active{
+    max-height: 200px;
 }
 .drop-menu-item{
     width: 100%;
@@ -190,10 +216,7 @@ h2{
 .drop-menu-item:hover{
     background: rgb(187, 186, 186);
 }
-p{
-    margin: 0;
-    flex-grow: 1;
-}
+
 .element-container{
     position: relative;
     border-radius: 10px;
@@ -227,6 +250,10 @@ p{
 
     transition: .4s all;
     overflow: hidden;
+}
+.meeting-data.active{
+    max-height: 500px;
+
 }
 .meeting-details{
     padding: 10px;
