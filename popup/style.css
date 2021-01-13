@@ -106,6 +106,7 @@ p{
 .bar-img{
     height: 100%;
     width: auto;
+    border-radius: 50%;
 }
 .bar-bar{
     width: 0%;
@@ -131,19 +132,11 @@ p{
 }
 .bar-bar-container{
     flex-grow: 1;
-    height: 80%;
+    height: 100%;
     margin-left: 10px;
     /* background: blue; */
 }
-.image-cropper {
 
-    height: 100%;
-    width: auto;
-    position: relative;
-    overflow: hidden;
-    border-radius: 50%;
-    flex-grow: 0;
-  }
 .tool-tip{
     position: fixed;
     opacity: 0;
@@ -194,7 +187,9 @@ p{
 .drop-menu{
     /* border-top: 2px solid black; */
     background: white;
-    max-height: 0px;
+    /* max-height: 0px; */
+    transform: scaleY(0);
+    transform-origin: top;
     width: 100%;
     transition: .4s all;
     overflow: scroll;
@@ -204,7 +199,8 @@ p{
     border-bottom-right-radius: 10px;
 }
 .drop-menu.active{
-    max-height: 200px;
+    transform: scaleY(1);
+
 }
 .drop-menu-item{
     width: 100%;
@@ -240,6 +236,11 @@ p{
     padding: 10px;
     box-sizing: border-box;
     font-size: 20px;
+    /* justify-content: center; */
+    align-items: center;
+}
+.fa-trash{
+    margin-right: 10px;
 }
 .meeting-top:hover{
     cursor: pointer;
@@ -272,4 +273,5 @@ p{
 .select-symbol{
     opacity: 0;
     transition: .4s all;
+    margin-left: 10px;
 }

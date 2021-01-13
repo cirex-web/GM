@@ -231,7 +231,7 @@ function setUpMeetingsPage() {
             if ($bottom.hasClass("active")) {
                 let graph = $bottom.find(".graph-container");
                 // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
-                updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))], graph, 5, true);
+                updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))], graph, 9, true);
 
             }
         }
@@ -297,7 +297,7 @@ function displaySpeakerData(users, item, max, max_items) {
     let item_num = Math.min(users.length, max_items);
     let pos = 0;
     let margin = 10;
-    let height = Math.min(item.height() / item_num, 50);
+    let height = Math.min((item.height()-item_num*margin-margin/item_num) / item_num, 50);
     let count = 0;
     for (let user of users) {
         if (count == max_items) {
