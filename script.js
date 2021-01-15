@@ -68,6 +68,14 @@ let ELEMENTS = {
     MEETING_NICKNAME:{
         str: "rQC7Ie",
         type:"jsname"
+    },
+    PEOPLE_TAB_PANEL:{
+        str:"[jsname='KYYiw'] [jsname='PAiuue']",
+        type:"RAW"
+    },
+    PEOPLE_LIST:{
+        str:"list",
+        type:"role"
     }
 }
 class El {
@@ -79,6 +87,9 @@ class El {
         return $(this.formQuery());
     }
     formQuery() {
+        if(this.type=="RAW"){
+            return this.str;
+        }
         return "[" + this.type + "='" + this.str + "']";
     }
 }
@@ -130,17 +141,17 @@ let utilFunctions = {
     },
     ADD_CLASS: {
         snippet: "a.classList.add(b)",
-        func: (a, b) => {
+        func: (element, class_name) => {
             try {
 
-                if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
+                if (matches(element, ELEMENTS.SIDE_BAR) && class_name == CLASS_NAMES.SIDEBAR_OPEN) {
                     if (!local.sidebar_init.phase_one) {
                         local.sidebar_init.phase_one = true;
                     } else {
                         local.clicked_sidebar = true;
                     }
-                } else if (matches(a, ELEMENTS.VOLUME_OUTPUT) || matches(a, ELEMENTS.VOLUME_CONTAINER)) {
-                    updateSpeakerData(a, b);
+                } else if (matches(element, ELEMENTS.VOLUME_OUTPUT) || matches(element, ELEMENTS.VOLUME_CONTAINER)) {
+                    updateSpeakerData(element, class_name);
                 }
                 return true;
             } catch (e) {
@@ -163,8 +174,6 @@ $("data_transfer")[0].addEventListener('data', function (e) {
     user_database = e.detail.user_database;
     meeting_database = e.detail.meeting_database;
 
-
-    //Make sure it's an obj
 
     console.log("meeting data, meeting database, and user database: ", meeting_data, meeting_database, user_database);
     try {
@@ -217,32 +226,38 @@ async function run() {
             if (inCall()) {
 
                 if (!local.sidebar_init.phase_two) { //Should only be like this in the beginning
+                    // ELEMENTS.SIDE_BAR.getEl().css("opacity",0);
                     ELEMENTS.SHOW_USERS.getEl().click();
-                    ELEMENTS.SHOW_CHAT.getEl().attr("jsaction","");
+                    // ELEMENTS.SHOW_CHAT.getEl().attr("jsaction","");
                     let button_clone = ELEMENTS.SHOW_CHAT.getEl().clone();
                     ELEMENTS.SHOW_CHAT.getEl().replaceWith(button_clone);
                     await init_sidebar();
-                    ELEMENTS.SHOW_CHAT.getEl().on("click",function(e){
-                        e.preventDefault();
-                        ELEMENTS.SHOW_USERS.getEl().click();
-                        if(!local.dynamic.processing_sidebar){
-                            local.dynamic.processing_sidebar = true;
-                            setTimeout(()=>{
-                                console.log("clicked");
-                                ELEMENTS.CHAT_TAB.getEl().click();
-                                setTimeout(()=>{
-                                    local.dynamic.processing_sidebar = false;
-                                },500);
-                            },240);
-                        }
+                    // ELEMENTS.SHOW_CHAT.getEl().on("click",function(e){
+                    //     e.preventDefault();
+                    //     ELEMENTS.SHOW_USERS.getEl().click();
+                    //     if(!local.dynamic.processing_sidebar){
+                    //         local.dynamic.processing_sidebar = true;
+                    //         setTimeout(()=>{
+                    //             console.log("clicked");
+                    //             ELEMENTS.CHAT_TAB.getEl().click();
+                    //             setTimeout(()=>{
+                    //                 local.dynamic.processing_sidebar = false;
+                    //             },500);
+                    //         },240);
+                    //     }
     
-                    });
+                    // });
+                    setUpMeetingData();
                 }
-                let nickname = ELEMENTS.MEETING_NICKNAME.getEl().html().toString();
-                meeting_data.nickname = nickname.includes(" ")?undefined:nickname;
-                if(!meeting_data.start_time){
-                    meeting_data.start_time = + new Date();
-                }
+                
+                ELEMENTS.PEOPLE_TAB_PANEL.getEl().css("display",'block');
+                ELEMENTS.PEOPLE_TAB_PANEL.getEl().css("position",'absolute');
+
+                // ELEMENTS.PEOPLE_LIST.getEl().css("position","relative");
+                // ELEMENTS.LIST_ITEM.getEl().css("position","absolute");
+                ELEMENTS.LIST_ITEM.getEl().css("height","0px");
+                
+
                 // jQuery.fn.removeAttributes = function() {
                 //     return this.each(function() {
                 //       var attributes = $.map(this.attributes, function(item) {
@@ -285,6 +300,13 @@ async function run() {
         }
     }
 
+}
+function setUpMeetingData(){
+    let nickname = ELEMENTS.MEETING_NICKNAME.getEl().html().toString();
+    meeting_data.nickname = nickname.includes(" ")?undefined:nickname;
+    if(!meeting_data.start_time){
+        meeting_data.start_time = + new Date();
+    }
 }
 function init_sidebar() {
     return new Promise((re) => {

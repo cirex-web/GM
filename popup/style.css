@@ -107,6 +107,16 @@ p{
     height: 100%;
     width: auto;
     border-radius: 50%;
+    /* position: absolute;
+    left: 0;
+    transform: translate(-50%,0); */
+    margin-left: 50%;
+    background: lightgrey;
+}
+.image-container{
+    height: 100%;
+    position: relative;
+    z-index: 1;
 }
 .bar-bar{
     width: 0%;
@@ -115,7 +125,7 @@ p{
     border-bottom-right-radius: 10px;
     transition: .2s background;
     height: 100%;
-    position: relative;
+
 }
 .bar-bar[val]::after{
     top: 50%;
@@ -133,7 +143,9 @@ p{
 .bar-bar-container{
     flex-grow: 1;
     height: 100%;
-    margin-left: 10px;
+    /* margin-left: 20px; */
+    position: relative;
+
     /* background: blue; */
 }
 
@@ -147,6 +159,7 @@ p{
 }
 .class-selector{
     border: 2px solid transparent;
+    border-top-left-radius: 10px;
     text-align: left;
     color: black;
     font-size: 20px;
@@ -217,13 +230,13 @@ p{
     position: relative;
     border-radius: 10px;
     margin: 10px;
-    border: 3px solid black;
+    border: 1px solid black;
     overflow: hidden;
-    background: rgb(187, 187, 187);
-
+    /* background: rgb(187, 187, 187); */
+    background: white;
 }
-.element-container.no-border{
-    border: none;
+.element-container.no-hidden-overflow{
+    /* border: none; */
     overflow: visible;
 }
 .element-container.flex{
@@ -233,7 +246,6 @@ p{
 }
 .meeting-top{
     display: flex;
-    padding: 10px;
     box-sizing: border-box;
     font-size: 20px;
     /* justify-content: center; */
@@ -244,6 +256,7 @@ p{
 }
 .meeting-top:hover{
     cursor: pointer;
+    background: lightgray;
 }
 .meeting-data{
     /* Move padding */

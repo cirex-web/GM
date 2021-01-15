@@ -5,7 +5,7 @@ let STR = {
 }
 //TODO: deal with page refresh... should refresh data or something
 
-let user_database, cur_meeting, meet_code, meeting_database; //these are the variables that contain the current meeting data (they're updated automatically and updateSpeakerData() is called everytime there's an update.)
+let user_database, cur_meeting, meeting_database; //these are the variables that contain the current meeting data (they're updated automatically and updateSpeakerData() is called everytime there's an update.)
 let timeGraph_obj;
 let page;
 let timer_graph_data = [];
@@ -51,65 +51,22 @@ Value:{
 */
 window.onload = () => {
     chrome.storage.onChanged.addListener(function (changes) {
-        let prev_meeting;
-
+        $("#full-disp").css('display', 'none');
         for (var key in changes) {
             let change_obj = changes[key]
             let cur_change = change_obj.newValue;
-            let before_change = change_obj.oldValue;
             if (key === STR.cur_meetings) {
-
-                cur_meeting = searchForMeet(cur_change);
-                prev_meeting = searchForMeet(before_change);
+                updateCurMeetingData(cur_change);
             } else if (key === STR.users) {
                 user_database = cur_change;
                 console.log("updated user_database to ", user_database);
 
             }
         }
+        console.log(cur_meeting);
         updateSpeakerData3(cur_meeting, $("#speaker-graph"));
-        // console.log(timeGraph_obj.data);
-        // updateSpeakerData2(prev_meeting, cur_meeting);
-        // updateSpeakerData();
     });
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, async function (data) {
-
-            if (chrome.runtime.lastError) {
-                $("#full-disp").html("You aren't in a call yet!");
-
-            } else {
-                user_database = data.user_database;
-                cur_meeting = data.cur_meeting;
-                console.log("data retrieved: " + data);
-
-
-
-                if (!cur_meeting) {
-                    $("#full-disp").html("No data yet!");
-                } else {
-                    $("#full-disp").css('display', 'none');
-                    meet_code = cur_meeting.meeting_code;
-
-                    updateSpeakerData3(cur_meeting, $("#speaker-graph"));
-                    $(".selected-class p").html(cur_meeting.category);
-                }
-            };
-            meeting_database = await getFromStorage(STR.all_other_meetings);
-            user_database = await getFromStorage(STR.users);
-            setUpMeetingsPage();
-            $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
-                if ($(ev.target).closest("[type='add-new']").length==0) {
-                    cur_meeting.category = $(ev.target).html(); //TODO:
-                    let class_header = $(this).closest(".class-selector").find(".selected-class");
-                    class_header.find("p").html(cur_meeting.category);
-                    console.log("in");
-                    toggleMenu($(ev.target));
-                }
-            });
-            $("[ref='C']").click();
-        })
-    });
+    getAllData();
 
     $(document).on("mousemove", function (event) {
         let bar = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".bar");
@@ -168,6 +125,48 @@ window.onload = () => {
     });
 
 
+}
+function getAllData(first_time = true){
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, async function (data) {
+
+            if (chrome.runtime.lastError) {
+                $("#full-disp").html("You aren't in a call yet!");
+
+            } else {
+                user_database = data.user_database;
+                cur_meeting = data.cur_meeting;
+                console.log("data retrieved: " + data);
+
+                if (!cur_meeting) {
+                    $("#full-disp").html("No data yet!");
+                } else {
+                    $("#full-disp").css('display', 'none');
+
+                    updateSpeakerData3(cur_meeting, $("#speaker-graph"));
+                    $(".selected-class p").html(cur_meeting.category);
+                }
+            };
+
+
+            meeting_database = await getFromStorage(STR.all_other_meetings);
+            user_database = await getFromStorage(STR.users);
+            if(first_time){
+                setUpMeetingsPage();
+
+            }
+            $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
+                if ($(ev.target).closest("[type='add-new']").length==0) {
+                    cur_meeting.category = $(ev.target).html(); //TODO:
+                    let class_header = $(this).closest(".class-selector").find(".selected-class");
+                    class_header.find("p").html(cur_meeting.category);
+                    console.log("in");
+                    toggleMenu($(ev.target));
+                }
+            });
+            $("[ref='C']").click();
+        })
+    });
 }
 function toggleMenu(this1) {
 
@@ -231,7 +230,7 @@ function setUpMeetingsPage() {
             if ($bottom.hasClass("active")) {
                 let graph = $bottom.find(".graph-container");
                 // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
-                updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))], graph, 9, true);
+                updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))], graph, 10, true);
 
             }
         }
@@ -261,7 +260,7 @@ function getFromStorage(key) {
     });
 }
 
-function updateSpeakerData3(meeting, item, max_items = 20, one_time = false) {
+function updateSpeakerData3(meeting, item, max_items = 10, one_time = false) {
     let max = 1;
     let users = timer_graph_data;
     if (one_time) {
@@ -340,7 +339,24 @@ function displaySpeakerData(users, item, max, max_items) {
 
 }
 
+function updateCurMeetingData(change) {
+    if(!cur_meeting){
+        for(let meet of change){
+            if(!cur_meeting||meet.lastUpdated>cur_meeting.lastUpdated){
+                cur_meeting = meet;
+            }
+        }
+        
+    }else{
+        for (let meet of change) {
+            if (meet.meeting_code == cur_meeting.meeting_code) {
+                cur_meeting = meet;
+                break;
+            }
+        }
+    }
 
+}
 
 
 
@@ -442,13 +458,7 @@ function updateSpeakerData2(old_data, new_data) {
 
     });
 }
-function searchForMeet(change) {
-    for (let meet of change) {
-        if (meet.meeting_code == meet_code) {
-            return meet;
-        }
-    }
-}
+
 function addUser(id, user) {
     return new Promise(re => {
         timeGraph_obj.data.labels.push(user_database[id].NAME);
