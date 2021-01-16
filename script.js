@@ -250,12 +250,17 @@ async function run() {
                     setUpMeetingData();
                 }
                 
-                ELEMENTS.PEOPLE_TAB_PANEL.getEl().css("display",'block');
-                ELEMENTS.PEOPLE_TAB_PANEL.getEl().css("position",'absolute');
+                ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.display = 'block';
+                // ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexShrink = 3;
+                ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexGrow = 5;
+
+                // ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.zIndex = 9999;
+
+                // ELEMENTS.PEOPLE_TAB_PANEL.getEl().css("position",'absolute');
 
                 // ELEMENTS.PEOPLE_LIST.getEl().css("position","relative");
                 // ELEMENTS.LIST_ITEM.getEl().css("position","absolute");
-                ELEMENTS.LIST_ITEM.getEl().css("height","0px");
+                // ELEMENTS.LIST_ITEM.getEl().css("height","0px");
                 
 
                 // jQuery.fn.removeAttributes = function() {
