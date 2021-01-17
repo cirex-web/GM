@@ -145,10 +145,17 @@ let utilFunctions = {
             try {
 
                 if (matches(element, ELEMENTS.SIDE_BAR) && class_name == CLASS_NAMES.SIDEBAR_OPEN) {
+                    ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexGrow = 5;//wait for element
+
                     if (!local.sidebar_init.phase_one) {
                         local.sidebar_init.phase_one = true;
                     } else {
+
                         local.clicked_sidebar = true;
+                        setTimeout(()=>{
+                            ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexGrow = 7;
+                        },1000);
+
                     }
                 } else if (matches(element, ELEMENTS.VOLUME_OUTPUT) || matches(element, ELEMENTS.VOLUME_CONTAINER)) {
                     updateSpeakerData(element, class_name);
@@ -252,7 +259,7 @@ async function run() {
                 
                 ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.display = 'block';
                 // ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexShrink = 3;
-                ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexGrow = 5;
+                
 
                 // ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.zIndex = 9999;
 
