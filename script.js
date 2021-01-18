@@ -15,7 +15,9 @@ TODO: Update user database (in storage) every time it changes
 
 // Very later
 //TODO: Change storage to sync
-// try {
+
+
+// Relevant GM elements 
 let ELEMENTS = {
     SHOW_USERS: {
         str: "Show everyone",
@@ -62,20 +64,24 @@ let ELEMENTS = {
         type: "data-tab-id"
     },
     PEOPLE_NUM: {
-        str:"EydYod",
-        type:"jsname"
+        str: "EydYod",
+        type: "jsname"
     },
-    MEETING_NICKNAME:{
+    MEETING_NICKNAME: {
         str: "rQC7Ie",
-        type:"jsname"
+        type: "jsname"
     },
-    PEOPLE_TAB_PANEL:{
-        str:"[jsname='KYYiw'] [jsname='PAiuue']",
-        type:"RAW"
+    PEOPLE_TAB_PANEL: {
+        str: "[jsname='KYYiw'] [jsname='PAiuue']",
+        type: "RAW"
     },
-    PEOPLE_LIST:{
-        str:"list",
-        type:"role"
+    PEOPLE_LIST: {
+        str: "list",
+        type: "role"
+    },
+    CUSTOM_HOLDER: {
+        str: "holder",
+        type: "ext_type"
     }
 }
 class El {
@@ -87,7 +93,7 @@ class El {
         return $(this.formQuery());
     }
     formQuery() {
-        if(this.type=="RAW"){
+        if (this.type == "RAW") {
             return this.str;
         }
         return "[" + this.type + "='" + this.str + "']";
@@ -112,7 +118,7 @@ let local = {
     },
     registered_users: false,
     dynamic: {
-        processing_sidebar:false
+        processing_sidebar: false
     }
 }
 
@@ -152,9 +158,9 @@ let utilFunctions = {
                     } else {
 
                         local.clicked_sidebar = true;
-                        setTimeout(()=>{
+                        setTimeout(() => {
                             ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexGrow = 7;
-                        },1000);
+                        }, 1000);
 
                     }
                 } else if (matches(element, ELEMENTS.VOLUME_OUTPUT) || matches(element, ELEMENTS.VOLUME_CONTAINER)) {
@@ -210,10 +216,33 @@ $("data_transfer")[0].addEventListener('data', function (e) {
 });
 
 document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
-
+    createDataPool();
     prepareToRun();
 });
-document.arrive(ELEMENTS.LIST_ITEM.formQuery(), () => {
+document.arrive(ELEMENTS.LIST_ITEM.formQuery(), function () {
+    try {
+        setTimeout(() => {
+
+
+            let $element = $(this).find(ELEMENTS.VOLUME_CONTAINER.formQuery());
+            if ($element.attr("ext_type") != 'clone') {
+                let clone = $element.clone();
+                clone.attr("ext_type", 'clone');
+                
+                clone.appendTo($element);
+                console.log(clone);
+                setTimeout(()=>{
+                    clone.css('position', 'absolute');
+                    clone.appendTo(ELEMENTS.CUSTOM_HOLDER.getEl());
+                },1000);
+
+            }
+
+        }, 10);
+    } catch (e) {
+        console.log(e);
+    }
+
     registerUsers();
 });
 
@@ -252,14 +281,14 @@ async function run() {
                     //             },500);
                     //         },240);
                     //     }
-    
+
                     // });
                     setUpMeetingData();
                 }
-                
+
                 ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.display = 'block';
                 // ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexShrink = 3;
-                
+
 
                 // ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.zIndex = 9999;
 
@@ -268,7 +297,7 @@ async function run() {
                 // ELEMENTS.PEOPLE_LIST.getEl().css("position","relative");
                 // ELEMENTS.LIST_ITEM.getEl().css("position","absolute");
                 // ELEMENTS.LIST_ITEM.getEl().css("height","0px");
-                
+
 
                 // jQuery.fn.removeAttributes = function() {
                 //     return this.each(function() {
@@ -313,10 +342,15 @@ async function run() {
     }
 
 }
-function setUpMeetingData(){
+function createDataPool(){
+    let $div = $(document.createElement('div'));
+    $div.attr("ext_type","holder");
+    $("body").append($div);
+}
+function setUpMeetingData() {
     let nickname = ELEMENTS.MEETING_NICKNAME.getEl().html().toString();
-    meeting_data.nickname = nickname.includes(" ")?undefined:nickname;
-    if(!meeting_data.start_time){
+    meeting_data.nickname = nickname.includes(" ") ? undefined : nickname;
+    if (!meeting_data.start_time) {
         meeting_data.start_time = + new Date();
     }
 }
@@ -341,7 +375,7 @@ function wait(m) {
         setTimeout(re, m);
     });
 }
-function updateClone(){
+function updateClone() {
     console.log("cloning sidebar");
 
     let $cloned_sidebar = ELEMENTS.SIDE_BAR.getEl().clone();
@@ -349,13 +383,13 @@ function updateClone(){
     $cloned_sidebar.css("top", "10px");
     $cloned_sidebar.css("left", "10px");
     $cloned_sidebar.css("width", "360px");
-    $cloned_sidebar.each(function() {
-        var attributes = $.map(this.attributes, function(item) {
-          return item.name;
+    $cloned_sidebar.each(function () {
+        var attributes = $.map(this.attributes, function (item) {
+            return item.name;
         });
         var img = $(this);
-        $.each(attributes, function(i, item) {
-          img.removeAttr(item);
+        $.each(attributes, function (i, item) {
+            img.removeAttr(item);
         });
     });
     $cloned_sidebar.prop('id', 'clone');
@@ -443,7 +477,7 @@ function injectFunctions() {
         }
     }
 }
-function getListItem(el) {
+function getListItem(el) { //TODO: use .closest instead
     while ((el = el.parentElement) && !matches(el, ELEMENTS.LIST_ITEM));
     return el;
 }
@@ -455,14 +489,15 @@ function updateSpeakerData(speaker_el, class_added) {
     if (list_container != null) {
         let user = meeting_data.user_data[getUserImage(list_container)];
 
-        if (class_added === CLASS_NAMES.USER_MUTED) {
+        if (class_added === CLASS_NAMES.USER_MUTED) { //GM doesn't update inner sound class if user mutes; it adds the class USER_MUTED to the parent.
             stopTrackingUserTime(user, list_container);
-        } else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) {
-            if (class_added == CLASS_NAMES.NO_SOUND) {
+        } else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) { //Devs too lazy to not update sound class if muted; need to manually check.
+            if (class_added == CLASS_NAMES.NO_SOUND) { 
                 stopTrackingUserTime(user, list_container);
-            } else {
-                if (!user.is_speaking) {
-                    user.cur_interval = startTrackingUserTime(user, list_container);
+            } else { //All other classes pertain to user speaking (at various volumes)
+                console.log(user.is_speaking);
+                if (!user.is_speaking) { //guarantees one tracker per user.
+                    user.cur_interval = startTrackingUserTime(user, list_container); 
                 }
             }
         }

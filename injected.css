@@ -1,5 +1,9 @@
-[role="list"]{
+[ext_type='clone']{
     position: absolute;
-    flex-grow: unset;
-    box-flex: unset;
+}
+[ext_type='holder']{
+    background: white;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
