@@ -68,50 +68,7 @@ window.onload = () => {
     });
     getAllData();
 
-    $(document).on("mousemove", function (event) {
-        let bar = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".bar");
 
-        let $graph = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".element-container").find(".graph-container");
-
-        let $tool_tip = $graph.find(".tool-tip");
-
-        if (bar.length > 0) {
-            $tool_tip.css("opacity", 1);
-            if (!$tool_tip.attr("cur_interval")) {
-                let interval = setInterval(() => {
-                    let ms = parseInt(bar.attr("data"));
-                    let seconds = parseInt(ms / 1000);
-                    let minutes = parseInt(seconds / 60);
-                    let hours = parseInt(minutes / 60);
-                    minutes %= 60;
-                    seconds %= 60;
-
-                    minutes = ("00" + minutes).slice(-2);
-                    seconds = ("00" + seconds).slice(-2);
-
-                    if (hours == 0) {
-                        $tool_tip.html("Speaking time: " + minutes + ":" + seconds);
-                    } else {
-                        $tool_tip.html("Speaking time: " + hours + ":" + minutes + ":" + seconds);
-                    }
-                }, 50);
-                $tool_tip.attr("cur_interval", interval);
-            }
-
-        } else {
-
-            let interval = $tool_tip.attr("cur_interval");
-            if (interval) {
-                clearInterval(interval);
-                $tool_tip.attr("cur_interval", "");
-            }
-            $(".tool-tip").css("opacity", 0);
-        }
-        $tool_tip.css({
-            "left": event.clientX - $tool_tip.width() / 2,
-            "top": event.clientY + 10
-        });
-    });
     $(".selected-class").on("click", toggleMenu);
     $(".tab").click(function () {
         page = $(this).attr("ref");
@@ -416,7 +373,50 @@ function updateCurMeetingData(change) {
 
 
 
+// $(document).on("mousemove", function (event) {
+//     let bar = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".bar");
 
+//     let $graph = $(document.elementFromPoint(event.clientX, event.clientY)).closest(".element-container").find(".graph-container");
+
+//     let $tool_tip = $graph.find(".tool-tip");
+
+//     if (bar.length > 0) {
+//         $tool_tip.css("opacity", 1);
+//         if (!$tool_tip.attr("cur_interval")) {
+//             let interval = setInterval(() => {
+//                 let ms = parseInt(bar.attr("data"));
+//                 let seconds = parseInt(ms / 1000);
+//                 let minutes = parseInt(seconds / 60);
+//                 let hours = parseInt(minutes / 60);
+//                 minutes %= 60;
+//                 seconds %= 60;
+
+//                 minutes = ("00" + minutes).slice(-2);
+//                 seconds = ("00" + seconds).slice(-2);
+
+//                 if (hours == 0) {
+//                     $tool_tip.html("Speaking time: " + minutes + ":" + seconds);
+//                 } else {
+//                     $tool_tip.html("Speaking time: " + hours + ":" + minutes + ":" + seconds);
+//                 }
+//             }, 50);
+//             $tool_tip.attr("cur_interval", interval);
+//         }
+
+//     } else {
+
+//         let interval = $tool_tip.attr("cur_interval");
+//         if (interval) {
+//             clearInterval(interval);
+//             $tool_tip.attr("cur_interval", "");
+//         }
+//         $(".tool-tip").css("opacity", 0);
+//     }
+//     $tool_tip.css({
+//         "left": event.clientX - $tool_tip.width() / 2,
+//         "top": event.clientY + 10
+//     });
+// });
 
 //The below code is not currently being used
 //Commented because I don't think it's even run
