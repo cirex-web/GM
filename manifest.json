@@ -16,7 +16,7 @@
     ],
     "content_security_policy": "style-src 'self' 'sha256-AQe0kMnttwVvXWV4LutnFsTIDltiV/z7MUyXkuK3q8s=' 'sha256-z/+epQIZWnuW/jjeypGIpZt1je7sws1OeK6n2RHmOMY=' 'sha256-0Are7I5XVWX8M2W//5ynKqlRK4x/pFz+uk/fLMvXj3E=' 'sha256-Ucye6igbBXX1kfOSQeZ4ymqY8ogge1RacRAkgcaiVxc='",
     "web_accessible_resources": [
-        "script.js","/external/jquery.js","/external/arrive.js","https://kit.fontawesome.com","/popup/popup.js","/external/moment.js","injected.css","/external/*"
+        "script.js","https://kit.fontawesome.com","/popup/popup.js","injected.css","/external/*"
       ]
  
 }

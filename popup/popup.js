@@ -256,7 +256,9 @@ function displaySpeakerData(users, chart, max, max_items) {
             target: '.bar-bar',
             content(reference) {
                 return reference.getAttribute('tooltip-str');
-            }
+            },
+            inertia: true,
+            animation: 'shift-away-subtle'
         })
 
     }
@@ -280,14 +282,7 @@ function displaySpeakerData(users, chart, max, max_items) {
         }
         chart.find("#" + user.ID_parsed).css("top", pos + "px");
         chart.find("#" + user.ID_parsed).css("height", height + "px");
-        // item.find("#" + user.ID_parsed).attr("data", user.DATA.speaking_time);
 
-        // $("#" + user.ID_parsed + " .bar-bar")[0].animate([
-        //     {width: $("#" + user.ID_parsed + " .bar-bar").width()+"px"},
-
-        //     {width: (user.DATA.speaking_time / max * 100) + '%'}
-
-        //   ], 500);
         let bar = chart.find("#" + user.ID_parsed + " .bar-bar");
         bar.css("width", (user.DATA.speaking_time / max * 100) + "%");
         bar.attr('val', user_database[user.ID].NAME);
