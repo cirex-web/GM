@@ -99,14 +99,18 @@ class El {
         return "[" + this.type + "='" + this.str + "']";
     }
 }
-
+let OPTIONS = {
+    NO_PRESENTATIONS: true
+}
+let captured_users = [];
 let CLASS_NAMES = {
     SIDEBAR_OPEN: "kjZr4",
     USER_NAME: "ZjFb7c",
     USER_YOU: "QMC9Zd",
     USER_MUTED: "FTMc0c",
     USER_ICON: "G394Xd",
-    NO_SOUND: "gjg47c"
+    NO_SOUND: "gjg47c",
+    USER_PRESENTATION: "jcGw9c"
 }
 
 let local = {
@@ -151,16 +155,13 @@ let utilFunctions = {
             try {
 
                 if (matches(element, ELEMENTS.SIDE_BAR) && class_name == CLASS_NAMES.SIDEBAR_OPEN) {
-                    ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexGrow = 5;//wait for element
+                    ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexShrink = 999999999;//wait for element
 
                     if (!local.sidebar_init.phase_one) {
                         local.sidebar_init.phase_one = true;
                     } else {
 
                         local.clicked_sidebar = true;
-                        setTimeout(() => {
-                            ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexGrow = 7;
-                        }, 1000);
 
                     }
                 } else if (matches(element, ELEMENTS.VOLUME_OUTPUT) || matches(element, ELEMENTS.VOLUME_CONTAINER)) {
@@ -220,29 +221,6 @@ document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
     prepareToRun();
 });
 document.arrive(ELEMENTS.LIST_ITEM.formQuery(), function () {
-    try {
-        setTimeout(() => {
-
-
-            let $element = $(this).find(ELEMENTS.VOLUME_CONTAINER.formQuery());
-            if ($element.attr("ext_type") != 'clone') {
-                let clone = $element.clone();
-                clone.attr("ext_type", 'clone');
-                
-                clone.appendTo($element);
-                console.log(clone);
-                setTimeout(()=>{
-                    clone.css('position', 'absolute');
-                    clone.appendTo(ELEMENTS.CUSTOM_HOLDER.getEl());
-                },1000);
-
-            }
-
-        }, 10);
-    } catch (e) {
-        console.log(e);
-    }
-
     registerUsers();
 });
 
@@ -360,7 +338,7 @@ function init_sidebar() {
         side.arrive(ELEMENTS.CLOSE.formQuery(), { existing: true, onceOnly: true }, () => {
             const loop = setInterval(() => {
                 ELEMENTS.CLOSE.getEl().click();
-                if (local.sidebar_init.phase_two) {
+                if (local.sidebar_init.phase_two) { 
                     clearInterval(loop);
                     // updateClone();
                     re();
@@ -374,6 +352,24 @@ function wait(m) {
     return new Promise((re) => {
         setTimeout(re, m);
     });
+}
+function cloneListEl($element){
+    setTimeout(() => {
+        let id = $element.attr("data-participant-id");
+        if ($element.attr("ext_type") != 'clone' && !captured_users.includes(id)) {
+            captured_users.push(id);
+            let clone = $element.clone();
+            clone.attr("ext_type", 'clone');
+            
+            clone.appendTo($element);
+            console.log(clone);
+            setTimeout(()=>{
+                clone.appendTo(ELEMENTS.CUSTOM_HOLDER.getEl());
+            },1000);
+
+        }
+
+    }, 10);
 }
 function updateClone() {
     console.log("cloning sidebar");
@@ -477,24 +473,29 @@ function injectFunctions() {
         }
     }
 }
-function getListItem(el) { //TODO: use .closest instead
-    while ((el = el.parentElement) && !matches(el, ELEMENTS.LIST_ITEM));
-    return el;
-}
+
 function updateSpeakerData(speaker_el, class_added) {
     if (!local.sidebar_init.phase_two) return;
 
-    let list_container = getListItem(speaker_el);
+    let list_container = speaker_el.closest(ELEMENTS.LIST_ITEM.formQuery());
     meeting_data.lastUpdated = + new Date();
     if (list_container != null) {
+
+        if($(list_container).find("."+CLASS_NAMES.USER_PRESENTATION).length>0&&OPTIONS.NO_PRESENTATIONS){
+            return;
+        }
+
         let user = meeting_data.user_data[getUserImage(list_container)];
 
         if (class_added === CLASS_NAMES.USER_MUTED) { //GM doesn't update inner sound class if user mutes; it adds the class USER_MUTED to the parent.
             stopTrackingUserTime(user, list_container);
         } else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) { //Devs too lazy to not update sound class if muted; need to manually check.
+
             if (class_added == CLASS_NAMES.NO_SOUND) { 
                 stopTrackingUserTime(user, list_container);
             } else { //All other classes pertain to user speaking (at various volumes)
+                cloneListEl($(list_container));
+
                 console.log(user.is_speaking);
                 if (!user.is_speaking) { //guarantees one tracker per user.
                     user.cur_interval = startTrackingUserTime(user, list_container); 

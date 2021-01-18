@@ -17,7 +17,7 @@ class Meeting {
 }
 let debug = false;
 let injected_scripts = ["/external/jquery.js", "/external/arrive.js", "script.js"];
-let injected_styles = [];
+let injected_styles = ["injected.css"];
 
 if (window.location.pathname !== "/") {
 

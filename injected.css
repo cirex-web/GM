@@ -1,9 +1,8 @@
-[ext_type='clone']{
-    position: absolute;
-}
+
 [ext_type='holder']{
-    background: white;
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: fixed;
+    background-color: white;
+    z-index: 567777;
+    /* width: 0; */
+    overflow: hidden;
 }

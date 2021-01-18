@@ -126,7 +126,7 @@ window.onload = () => {
 
 
 }
-function getAllData(first_time = true){
+function getAllData(first_time = true) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, async function (data) {
 
@@ -151,12 +151,12 @@ function getAllData(first_time = true){
 
             meeting_database = await getFromStorage(STR.all_other_meetings);
             user_database = await getFromStorage(STR.users);
-            if(first_time){
+            if (first_time) {
                 setUpMeetingsPage();
 
             }
             $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
-                if ($(ev.target).closest("[type='add-new']").length==0) {
+                if ($(ev.target).closest("[type='add-new']").length == 0) {
                     cur_meeting.category = $(ev.target).html(); //TODO:
                     let class_header = $(this).closest(".class-selector").find(".selected-class");
                     class_header.find("p").html(cur_meeting.category);
@@ -225,7 +225,7 @@ function setUpMeetingsPage() {
 
             toggleMenu(class_selector);
 
-        } else if(!$drop_menu.hasClass('active')){
+        } else if (!$drop_menu.hasClass('active')) {
             $bottom.toggleClass("active");
             if ($bottom.hasClass("active")) {
                 let graph = $bottom.find(".graph-container");
@@ -261,6 +261,8 @@ function getFromStorage(key) {
 }
 
 function updateSpeakerData3(meeting, item, max_items = 10, one_time = false) {
+
+
     let max = 1;
     let users = timer_graph_data;
     if (one_time) {
@@ -291,12 +293,20 @@ function updateSpeakerData3(meeting, item, max_items = 10, one_time = false) {
     })
     displaySpeakerData(users, item, max, max_items);
 }
-function displaySpeakerData(users, item, max, max_items) {
-    console.log(users);
+function displaySpeakerData(users, chart, max, max_items) {
+    if (!chart[0]._tippy) {
+        tippy.delegate(chart[0], {
+            target: '.bar-bar',
+            content(reference) {
+                return reference.getAttribute('tooltip-str');
+            }
+        })
+
+    }
     let item_num = Math.min(users.length, max_items);
     let pos = 0;
     let margin = 10;
-    let height = Math.min((item.height()-item_num*margin-margin/item_num) / item_num, 50);
+    let height = Math.min((chart.height() - item_num * margin - margin / item_num) / item_num, 50);
     let count = 0;
     for (let user of users) {
         if (count == max_items) {
@@ -304,31 +314,38 @@ function displaySpeakerData(users, item, max, max_items) {
         } else {
             count++;
         }
-        if (item.find("#" + user.ID_parsed).length == 0) {
+        if (chart.find("#" + user.ID_parsed).length == 0) {
             let $clone = $(document.getElementById("speaker-bar").content.cloneNode(true));
             $clone.find(".bar").attr("id", user.ID_parsed);
             $clone.find(".bar-img").attr("src", user.IMG);
-            item.append($clone);
+            chart.append($clone);
 
         }
-        item.find("#" + user.ID_parsed).css("top", pos + "px");
-        item.find("#" + user.ID_parsed).css("height", height + "px");
-        item.find("#" + user.ID_parsed).attr("data", user.DATA.speaking_time);
+        chart.find("#" + user.ID_parsed).css("top", pos + "px");
+        chart.find("#" + user.ID_parsed).css("height", height + "px");
+        // item.find("#" + user.ID_parsed).attr("data", user.DATA.speaking_time);
+
         // $("#" + user.ID_parsed + " .bar-bar")[0].animate([
         //     {width: $("#" + user.ID_parsed + " .bar-bar").width()+"px"},
 
         //     {width: (user.DATA.speaking_time / max * 100) + '%'}
 
         //   ], 500);
-        item.find("#" + user.ID_parsed + " .bar-bar").css("width", (user.DATA.speaking_time / max * 100) + "%");
+        let bar = chart.find("#" + user.ID_parsed + " .bar-bar");
+        bar.css("width", (user.DATA.speaking_time / max * 100) + "%");
+        bar.attr('val', user_database[user.ID].NAME);
 
-        item.find("#" + user.ID_parsed + " .bar-bar").attr('val', user_database[user.ID].NAME);
-        item.find("#" + user.ID_parsed + " .bar-bar").css("width",);
-        if (item.attr("id") == "speaker-graph") {
+        let str = msToString(user.DATA.speaking_time);
+        if(bar[0]._tippy){
+            bar[0]._tippy.setContent(str);
+        }else{
+            bar.attr("tooltip-str",str);
+        }
+        if (chart.attr("id") == "speaker-graph") {
             if (user.DATA.is_speaking) {
-                $("#" + user.ID_parsed + " .bar-bar").css("background", "green");
+                bar.css("background", "green");
             } else {
-                $("#" + user.ID_parsed + " .bar-bar").css("background", "");
+                bar.css("background", "");
             }
         }
 
@@ -338,16 +355,31 @@ function displaySpeakerData(users, item, max, max_items) {
 
 
 }
+function msToString(ms){
+    let seconds = parseInt(ms / 1000);
+    let minutes = parseInt(seconds / 60);
+    let hours = parseInt(minutes / 60);
+    minutes %= 60;
+    seconds %= 60;
 
+    minutes = ("00" + minutes).slice(-2);
+    seconds = ("00" + seconds).slice(-2);
+
+    if (hours == 0) {
+        return "Speaking time: " + minutes + ":" + seconds;
+    } else {
+        return "Speaking time: " + hours + ":" + minutes + ":" + seconds;
+    }
+}
 function updateCurMeetingData(change) {
-    if(!cur_meeting){
-        for(let meet of change){
-            if(!cur_meeting||meet.lastUpdated>cur_meeting.lastUpdated){
+    if (!cur_meeting) {
+        for (let meet of change) {
+            if (!cur_meeting || meet.lastUpdated > cur_meeting.lastUpdated) {
                 cur_meeting = meet;
             }
         }
-        
-    }else{
+
+    } else {
         for (let meet of change) {
             if (meet.meeting_code == cur_meeting.meeting_code) {
                 cur_meeting = meet;
