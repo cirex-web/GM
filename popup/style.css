@@ -107,11 +107,10 @@ p{
     height: 100%;
     width: auto;
     border-radius: 50%;
-    /* position: absolute;
-    left: 0;
-    transform: translate(-50%,0); */
     margin-left: 50%;
-    background: lightgrey;
+    background: white;
+    border: 3px solid black;
+    box-sizing: border-box;
 }
 .image-container{
     height: 100%;
@@ -159,14 +158,6 @@ p{
     /* background: blue; */
 }
 
-.tool-tip{
-    position: fixed;
-    opacity: 0;
-    transition: .2s opacity;
-    background: white;
-    padding: 10px;
-    z-index: 99;
-}
 .class-selector{
     border: 2px solid transparent;
     border-top-left-radius: 10px;
