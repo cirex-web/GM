@@ -82,6 +82,10 @@ let ELEMENTS = {
     CUSTOM_HOLDER: {
         str: "holder",
         type: "ext_type"
+    },
+    TAB_UNDERLINE: {
+        str: "s3t1lf",
+        type: "jsname"
     }
 }
 class El {
@@ -120,10 +124,7 @@ let local = {
         phase_one: false,
         phase_two: false
     },
-    registered_users: false,
-    dynamic: {
-        processing_sidebar: false
-    }
+    registered_users: false
 }
 
 
@@ -246,21 +247,7 @@ async function run() {
                     let button_clone = ELEMENTS.SHOW_CHAT.getEl().clone();
                     ELEMENTS.SHOW_CHAT.getEl().replaceWith(button_clone);
                     await init_sidebar();
-                    // ELEMENTS.SHOW_CHAT.getEl().on("click",function(e){
-                    //     e.preventDefault();
-                    //     ELEMENTS.SHOW_USERS.getEl().click();
-                    //     if(!local.dynamic.processing_sidebar){
-                    //         local.dynamic.processing_sidebar = true;
-                    //         setTimeout(()=>{
-                    //             console.log("clicked");
-                    //             ELEMENTS.CHAT_TAB.getEl().click();
-                    //             setTimeout(()=>{
-                    //                 local.dynamic.processing_sidebar = false;
-                    //             },500);
-                    //         },240);
-                    //     }
 
-                    // });
                     setUpMeetingData();
                 }
 
@@ -320,9 +307,9 @@ async function run() {
     }
 
 }
-function createDataPool(){
+function createDataPool() {
     let $div = $(document.createElement('div'));
-    $div.attr("ext_type","holder");
+    $div.attr("ext_type", "holder");
     $("body").append($div);
 }
 function setUpMeetingData() {
@@ -338,7 +325,17 @@ function init_sidebar() {
         side.arrive(ELEMENTS.CLOSE.formQuery(), { existing: true, onceOnly: true }, () => {
             const loop = setInterval(() => {
                 ELEMENTS.CLOSE.getEl().click();
-                if (local.sidebar_init.phase_two) { 
+                if (local.sidebar_init.phase_two) {
+                    $("body").on('click', 'div', () => {
+                        setTimeout(() => {
+                            if (ELEMENTS.LIST_ITEM.getEl().width()>1 && local.clicked_sidebar) {
+                                ELEMENTS.LIST_ITEM.getEl().css('cssText', 'height: 56px !important;');
+                            } else {
+                                ELEMENTS.LIST_ITEM.getEl().css('height', '');
+                            }
+                        }, 50);
+
+                    });
                     clearInterval(loop);
                     // updateClone();
                     re();
@@ -353,19 +350,19 @@ function wait(m) {
         setTimeout(re, m);
     });
 }
-function cloneListEl($element){
+function cloneListEl($element) {
     setTimeout(() => {
         let id = $element.attr("data-participant-id");
         if ($element.attr("ext_type") != 'clone' && !captured_users.includes(id)) {
             captured_users.push(id);
             let clone = $element.clone();
             clone.attr("ext_type", 'clone');
-            
+
             clone.appendTo($element);
             console.log(clone);
-            setTimeout(()=>{
+            setTimeout(() => {
                 clone.appendTo(ELEMENTS.CUSTOM_HOLDER.getEl());
-            },1000);
+            }, 1000);
 
         }
 
@@ -476,12 +473,11 @@ function injectFunctions() {
 
 function updateSpeakerData(speaker_el, class_added) {
     if (!local.sidebar_init.phase_two) return;
-
     let list_container = speaker_el.closest(ELEMENTS.LIST_ITEM.formQuery());
     meeting_data.lastUpdated = + new Date();
     if (list_container != null) {
 
-        if($(list_container).find("."+CLASS_NAMES.USER_PRESENTATION).length>0&&OPTIONS.NO_PRESENTATIONS){
+        if ($(list_container).find("." + CLASS_NAMES.USER_PRESENTATION).length > 0 && OPTIONS.NO_PRESENTATIONS) {
             return;
         }
 
@@ -489,16 +485,17 @@ function updateSpeakerData(speaker_el, class_added) {
 
         if (class_added === CLASS_NAMES.USER_MUTED) { //GM doesn't update inner sound class if user mutes; it adds the class USER_MUTED to the parent.
             stopTrackingUserTime(user, list_container);
-        } else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)) { //Devs too lazy to not update sound class if muted; need to manually check.
+        } else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)
+            && !speaker_el.classList.contains(CLASS_NAMES.USER_MUTED)) { //Devs too lazy to not update sound class if muted; need to manually check.
+            console.log(class_added);
 
-            if (class_added == CLASS_NAMES.NO_SOUND) { 
+            if (class_added == CLASS_NAMES.NO_SOUND) {
                 stopTrackingUserTime(user, list_container);
             } else { //All other classes pertain to user speaking (at various volumes)
                 cloneListEl($(list_container));
 
-                console.log(user.is_speaking);
                 if (!user.is_speaking) { //guarantees one tracker per user.
-                    user.cur_interval = startTrackingUserTime(user, list_container); 
+                    user.cur_interval = startTrackingUserTime(user, list_container);
                 }
             }
         }
@@ -551,6 +548,3 @@ function updateStorage() {
     });
     $("data_transfer")[0].dispatchEvent(event);
 }
-// } catch (e) {
-//     console.log(e);
-// }

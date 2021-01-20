@@ -280,10 +280,12 @@ function displaySpeakerData(users, chart, max, max_items) {
             chart.append($clone);
 
         }
-        chart.find("#" + user.ID_parsed).css("top", pos + "px");
-        chart.find("#" + user.ID_parsed).css("height", height + "px");
-
+        let entire_bar = chart.find("#" + user.ID_parsed);
         let bar = chart.find("#" + user.ID_parsed + " .bar-bar");
+
+        entire_bar.css("top", pos + "px");
+        entire_bar.css("height", height + "px");
+
         bar.css("width", (user.DATA.speaking_time / max * 100) + "%");
         bar.attr('val', user_database[user.ID].NAME);
 
@@ -295,9 +297,9 @@ function displaySpeakerData(users, chart, max, max_items) {
         }
         if (chart.attr("id") == "speaker-graph") {
             if (user.DATA.is_speaking) {
-                bar.css("background", "green");
+                entire_bar.addClass('active');
             } else {
-                bar.css("background", "");
+                entire_bar.removeClass('active');
             }
         }
 

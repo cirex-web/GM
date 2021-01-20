@@ -126,6 +126,12 @@ p{
     height: 100%;
     position: relative;
 }
+.bar.active .bar-bar{
+    background: green;
+}
+.bar.active .bar-img{
+    border-color: green;
+}
 .bar-bar[val]::after{
     padding: 0 10px 0 35px;
     left: 0px;

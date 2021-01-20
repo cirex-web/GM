@@ -6,3 +6,7 @@
     /* width: 0; */
     overflow: hidden;
 }
+[role='listitem']{
+    height: 1px !important;
+    /* opacity: 0; */
+}
