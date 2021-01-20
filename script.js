@@ -337,7 +337,6 @@ function init_sidebar() {
 
                     });
                     clearInterval(loop);
-                    // updateClone();
                     re();
                 }
             }, 50);

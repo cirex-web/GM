@@ -50,25 +50,11 @@ Value:{
 
 */
 window.onload = () => {
-    chrome.storage.onChanged.addListener(function (changes) {
-        $("#full-disp").css('display', 'none');
-        for (var key in changes) {
-            let change_obj = changes[key]
-            let cur_change = change_obj.newValue;
-            if (key === STR.cur_meetings) {
-                updateCurMeetingData(cur_change);
-            } else if (key === STR.users) {
-                user_database = cur_change;
-                console.log("updated user_database to ", user_database);
-
-            }
-        }
-        console.log(cur_meeting);
-        updateSpeakerData3(cur_meeting, $("#speaker-graph"));
-    });
     getAllData();
-
-
+    setUpTabs();
+    chrome.storage.onChanged.addListener(processStorageChanges);
+}
+function setUpTabs() {
     $(".selected-class").on("click", toggleMenu);
     $(".tab").click(function () {
         page = $(this).attr("ref");
@@ -80,8 +66,23 @@ window.onload = () => {
         $(".tab-container[ref=" + page + "]").css("display", "block");
         $(this).addClass("selected");
     });
+    $("[ref='C']").click();
+}
+function processStorageChanges(changes) {
+    $("#full-disp").css('display', 'none');
+    for (var key in changes) {
+        let change_obj = changes[key]
+        let cur_change = change_obj.newValue;
+        if (key === STR.cur_meetings) {
+            updateCurMeetingData(cur_change);
+        } else if (key === STR.users) {
+            user_database = cur_change;
+            console.log("updated user_database to ", user_database);
 
-
+        }
+    }
+    console.log(cur_meeting);
+    updateSpeakerData3(cur_meeting, $("#speaker-graph"));
 }
 function getAllData(first_time = true) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -110,50 +111,76 @@ function getAllData(first_time = true) {
             user_database = await getFromStorage(STR.users);
             if (first_time) {
                 setUpMeetingsPage();
-
             }
-            $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
-                if ($(ev.target).closest("[type='add-new']").length == 0) {
-                    cur_meeting.category = $(ev.target).html(); //TODO:
-                    let class_header = $(this).closest(".class-selector").find(".selected-class");
-                    class_header.find("p").html(cur_meeting.category);
-                    console.log("in");
-                    toggleMenu($(ev.target));
-                }
-            });
-            $("[ref='C']").click();
+            addDropMenuListener();
         })
+    });
+}
+function addDropMenuListener() {
+    $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
+        let list_item = $(ev.target);
+        if (list_item.closest("[type='add-new']").length == 0) {
+            cur_meeting.category = list_item.html();
+
+
+            let class_header = $(this).closest(".class-selector").find(".selected-class");
+            class_header.find("p").html(cur_meeting.category);
+            toggleMenu(list_item);
+        } else {
+            if(list_item.closest("[ready='true'").length==0){
+                list_item.html('<input type="text">');
+                list_item.attr('ready','true');
+                list_item.find('input').focus();
+            }
+
+        }
+    });
+    $("input").on('click', (ev) => {
+        ev.stopPropagation();
     });
 }
 function toggleMenu(this1) {
 
-    console.log("toggling");
     let $menu = $(this).closest(".class-selector").find(".drop-menu");
     if ($menu.length == 0) {
         $menu = this1.closest(".class-selector").find(".drop-menu");
     }
+    if($menu.attr('moving')){
+        return;
+    }
+
     $menu.toggleClass("active");
 
     if ($menu.hasClass("active")) {
 
         for (let cat of Object.keys(meeting_database)) {
-            let clone = $("#drop-menu-item")[0].content.cloneNode(true);
-            clone.querySelector(".drop-menu-item").innerHTML = cat;
-            $menu.append(clone);
+            createListItem($menu, cat);
         }
+        createListItem($menu,"Add Class...",true);
+
+
 
     } else {
+        $menu.attr('moving','true');
         setTimeout(() => {
             for (let item of $menu.children()) {
                 let $item = $(item);
-                if ($item.attr("type") != "add-new") {
-                    $item.remove();
-                }
+                $item.remove();
+
             }
+            $menu.attr('moving','');
 
         }, 400);
     }
 
+}
+function createListItem($menu, content, add_class = false){
+    let clone = $("#drop-menu-item")[0].content.cloneNode(true);
+    clone.querySelector(".drop-menu-item").innerHTML = content;
+    if(add_class){
+        clone.querySelector(".drop-menu-item").setAttribute('type',"add-new");
+    }
+    $menu.append(clone);
 }
 function setUpMeetingsPage() {
     for (let cat of Object.keys(meeting_database)) {
@@ -217,7 +244,7 @@ function getFromStorage(key) {
     });
 }
 
-function updateSpeakerData3(meeting, item, max_items = 10, one_time = false) {
+function updateSpeakerData3(meeting, chart, max_items = 1, one_time = false) {
 
 
     let max = 1;
@@ -248,7 +275,7 @@ function updateSpeakerData3(meeting, item, max_items = 10, one_time = false) {
     users.sort((a, b) => {
         return b.DATA.speaking_time - a.DATA.speaking_time
     })
-    displaySpeakerData(users, item, max, max_items);
+    displaySpeakerData(users, chart, max, max_items);
 }
 function displaySpeakerData(users, chart, max, max_items) {
     if (!chart[0]._tippy) {
@@ -264,15 +291,12 @@ function displaySpeakerData(users, chart, max, max_items) {
     }
     let item_num = Math.min(users.length, max_items);
     let pos = 0;
-    let margin = 10;
+    let margin = 7;
     let height = Math.min((chart.height() - item_num * margin - margin / item_num) / item_num, 50);
     let count = 0;
     for (let user of users) {
-        if (count == max_items) {
-            break;
-        } else {
-            count++;
-        }
+        count++;
+
         if (chart.find("#" + user.ID_parsed).length == 0) {
             let $clone = $(document.getElementById("speaker-bar").content.cloneNode(true));
             $clone.find(".bar").attr("id", user.ID_parsed);
@@ -290,26 +314,30 @@ function displaySpeakerData(users, chart, max, max_items) {
         bar.attr('val', user_database[user.ID].NAME);
 
         let str = msToString(user.DATA.speaking_time);
-        if(bar[0]._tippy){
+        if (bar[0]._tippy) {
             bar[0]._tippy.setContent(str);
-        }else{
-            bar.attr("tooltip-str",str);
+        } else {
+            bar.attr("tooltip-str", str);
         }
-        if (chart.attr("id") == "speaker-graph") {
+        if (chart.attr("id") == "speaker-graph") { //Only make active bars green if it's the ongoing meeting
             if (user.DATA.is_speaking) {
                 entire_bar.addClass('active');
             } else {
                 entire_bar.removeClass('active');
             }
         }
-
-        pos += height + margin;
+        if (count <= max_items) {
+            entire_bar.css('opacity', 1);
+            pos += height + margin;
+        } else {
+            entire_bar.css('opacity', 0);
+        }
 
     }
 
 
 }
-function msToString(ms){
+function msToString(ms) {
     let seconds = parseInt(ms / 1000);
     let minutes = parseInt(seconds / 60);
     let hours = parseInt(minutes / 60);
@@ -328,7 +356,7 @@ function msToString(ms){
 function updateCurMeetingData(change) {
     if (!cur_meeting) {
         for (let meet of change) {
-            if (!cur_meeting || meet.lastUpdated > cur_meeting.lastUpdated) {
+            if (!cur_meeting || meet.lastUpdated > cur_meeting.lastUpdated) { //fetches the latest updated meeting; TODO: might replace with direct query 
                 cur_meeting = meet;
             }
         }
