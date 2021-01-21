@@ -75,27 +75,41 @@ if (window.location.pathname !== "/") {
             for (let style of injected_styles) {
                 sendScript(style, true);
             }
-            const event = new CustomEvent('data', {
+            const event = new CustomEvent('send_data', {
                 detail: {
                     meeting_data: cur_meetings_data,
-                    user_database: user_database,
-                    meeting_database: meeting_database
+                    user_database: user_database
                 }
             });
             $("data_transfer")[0].dispatchEvent(event);
-
+            chrome.storage.onChanged.addListener(function(changes, namespace) {
+                for (var key in changes) {
+                  var storageChange = changes[key];
+                  if(key==STR.all_other_meetings){
+                      console.log("recieved udpate!",storageChange.newValue);
+                      meeting_database = storageChange.newValue;
+                  }
+                }
+            });
             chrome.runtime.onMessage.addListener(
                 function (message, _, sendResponse) {
                     switch (message.type) {
                         case "get_meeting_data":
                             sendResponse({
                                 cur_meeting: cur_meeting,
-                                user_database: user_database,
-                                meeting_database: meeting_database
-
+                                user_database: user_database
                             });
                             // console.log("sending",cur_meeting,user_database);
+                        
                             break;
+                        case "cur_meeting_update":
+                            const event = new CustomEvent('cur_meeting_update', {
+                                detail: {
+                                    meeting_category: message.category
+                                }//TODO:
+                            });
+                            console.log("send cat: "+message.category);
+                            $("data_transfer")[0].dispatchEvent(event);
                         default:
                             break;
                     }

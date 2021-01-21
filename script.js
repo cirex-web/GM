@@ -178,44 +178,13 @@ let utilFunctions = {
 }
 
 let meet_code = $('[data-meeting-code]').attr('data-meeting-code') || $('[data-unresolved-meeting-id]').attr('data-unresolved-meeting-id');
-let meeting_data, user_database, meeting_database;
+let meeting_data, user_database;
 
 for (n of Object.keys(ELEMENTS)) {
     ELEMENTS[n] = new El(ELEMENTS[n]);
 }
 injectFunctions();
-$("data_transfer")[0].addEventListener('data', function (e) {
-    meeting_data = e.detail.meeting_data;
-    user_database = e.detail.user_database;
-    meeting_database = e.detail.meeting_database;
-
-
-    console.log("meeting data, meeting database, and user database: ", meeting_data, meeting_database, user_database);
-    try {
-        let found = false;
-
-        for (let meet of meeting_data) {
-            if (meet.meeting_code === meet_code) {
-
-                meeting_data = meet;
-                found = true;
-
-                break;
-            }
-        }
-        if (!found) {
-            meeting_data = meeting_data[meeting_data.length - 1];
-            meeting_data.meeting_code = meet_code;
-
-        }
-        console.log("cur_meeting: ", meeting_data, meeting_database);
-
-
-    } catch (e) {
-        console.log(e);
-    }
-
-});
+listenForUpdates();
 
 document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
     createDataPool();
@@ -306,6 +275,42 @@ async function run() {
         }
     }
 
+}
+function listenForUpdates(){
+    $("data_transfer")[0].addEventListener('send_data', function (e) {
+        meeting_data = e.detail.meeting_data;
+        user_database = e.detail.user_database;
+    
+    
+        console.log("meeting data and user database: ", meeting_data, user_database);
+        try {
+            let found = false;
+    
+            for (let meet of meeting_data) {
+                if (meet.meeting_code === meet_code) {
+    
+                    meeting_data = meet;
+                    found = true;
+    
+                    break;
+                }
+            }
+            if (!found) {
+                meeting_data = meeting_data[meeting_data.length - 1];
+                meeting_data.meeting_code = meet_code;
+    
+            }
+            console.log("cur_meeting: ", meeting_data);
+    
+    
+        } catch (e) {
+            console.log(e);
+        }
+    
+    });
+    $("data_transfer")[0].addEventListener('cur_meeting_update', function (e){
+        cur_meeting.category = e.detail.cur_meeting.category;
+    });
 }
 function createDataPool() {
     let $div = $(document.createElement('div'));
@@ -486,7 +491,7 @@ function updateSpeakerData(speaker_el, class_added) {
             stopTrackingUserTime(user, list_container);
         } else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)
             && !speaker_el.classList.contains(CLASS_NAMES.USER_MUTED)) { //Devs too lazy to not update sound class if muted; need to manually check.
-            console.log(class_added);
+            // console.log(class_added);
 
             if (class_added == CLASS_NAMES.NO_SOUND) {
                 stopTrackingUserTime(user, list_container);

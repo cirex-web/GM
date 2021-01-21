@@ -94,7 +94,7 @@ function getAllData(first_time = true) {
             } else {
                 user_database = data.user_database;
                 cur_meeting = data.cur_meeting;
-                console.log("data retrieved: " + data);
+                console.log("data retrieved: ", data);
 
                 if (!cur_meeting) {
                     $("#full-disp").html("No data yet!");
@@ -118,19 +118,34 @@ function getAllData(first_time = true) {
 }
 function addDropMenuListener() {
     $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
-        let list_item = $(ev.target);
-        if (list_item.closest("[type='add-new']").length == 0) {
-            cur_meeting.category = list_item.html();
-
-
+        let $list_item = $(ev.target);
+        if ($list_item.closest("[type='add-new']").length == 0) {
+            let original_category = $list_item.closest(".class-selector").find(".selected-class p").html();
+            let chosen_category = $list_item.html();
+            if($list_item.closest(".main").length>0){
+                cur_meeting.category = chosen_category;
+                chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                    chrome.tabs.sendMessage(tabs[0].id, { type: "cur_meeting_update" , category: chosen_category}, async function (data) {
+            
+                        if (chrome.runtime.lastError) {
+                            console.log("you shouldn't see this lol");
+                        } 
+                    });
+                });
+            }else{
+                let moved_meeting = sorted_meetings[parseInt($list_item.closest(".element-container").attr("id"))];
+                meeting_database[original_category] = meeting_database[original_category].filter(item => item!=moved_meeting);
+                meeting_database[chosen_category].push(moved_meeting);
+            }
+            updateMeetingStorage();
             let class_header = $(this).closest(".class-selector").find(".selected-class");
-            class_header.find("p").html(cur_meeting.category);
-            toggleMenu(list_item);
+            class_header.find("p").html(chosen_category);
+            toggleMenu($list_item);
         } else {
-            if(list_item.closest("[ready='true'").length==0){
-                list_item.html('<input type="text">');
-                list_item.attr('ready','true');
-                list_item.find('input').focus();
+            if($list_item.closest("[ready='true'").length==0){
+                $list_item.html('<input type="text">');
+                $list_item.attr('ready','true');
+                $list_item.find('input').focus();
             }
 
         }
@@ -194,15 +209,17 @@ function setUpMeetingsPage() {
         let clone = $("#meeting-data")[0].content.cloneNode(true);
         let $clone = $(clone);
         $clone.find(".meeting-top p").html(meeting.category);
-        $clone.find(".date").html(meeting.lastUpdated);
+        $clone.find(".date").html(generateDate(meeting.lastUpdated));
         $clone.find(".code").html(meeting.meeting_code);
-        $clone.find(".graph-container").attr('id', i);
+        $clone.find(".element-container").attr('id', i);
         // $clone.find(".selected-class").on('click',);
         $("[ref='H'].tab-container").append($clone);
 
     }
     $(".meeting-top").on('click', function (ev) {
-        let $bottom = $(this).parent().find(".meeting-data");
+        console.log("clicked");
+        let $element_container = $(this).closest('.element-container');
+        let $bottom = $element_container.find(".meeting-data");
         let $drop_menu = $(this).find(".drop-menu");
         let class_selector = $(ev.target).closest(".selected-class");
         if (class_selector.length > 0 && $bottom.hasClass("active")) {
@@ -212,9 +229,9 @@ function setUpMeetingsPage() {
         } else if (!$drop_menu.hasClass('active')) {
             $bottom.toggleClass("active");
             if ($bottom.hasClass("active")) {
-                let graph = $bottom.find(".graph-container");
+                let $graph = $bottom.find(".graph-container");
                 // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
-                updateSpeakerData3(sorted_meetings[parseInt(graph.attr('id'))], graph, 10, true);
+                updateSpeakerData3(sorted_meetings[parseInt($element_container.attr('id'))], $graph, 10, true);
 
             }
         }
@@ -236,6 +253,10 @@ function setUpMeetingsPage() {
 
     });
 }
+function generateDate(mm){
+    let date = new Date(mm);
+    return date.toLocaleString("en-US", {timeZoneName: "short"});
+}
 function getFromStorage(key) {
     return new Promise((re) => {
         chrome.storage.local.get(key, function (result) {
@@ -243,7 +264,9 @@ function getFromStorage(key) {
         });
     });
 }
-
+function updateMeetingStorage(){
+    chrome.storage.sync.set({[STR.all_other_meetings]: meeting_database});
+}
 function updateSpeakerData3(meeting, chart, max_items = 1, one_time = false) {
 
 
