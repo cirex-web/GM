@@ -10,8 +10,6 @@
   <script src="/external/jquery.js"></script>
   <script src="/external/index.min.js"></script>
   <script src="/external/moment.js"></script>
-  <script src="/external/fonts.js"></script>
-  <script src="/external/Chart.min.js"></script>
   <script src="/external/tippy-core.js"></script>
   <script src="/external/tippy.js"></script>
   <link rel="stylesheet" href="/external/scale.css"/>
@@ -26,10 +24,13 @@
     <div id="header">
       <div class="title">GM Talk Tracker</div>
 
+      <img class="tab-icon" src="../icons/call.svg" ref="C"></img>
+      <img class="tab-icon" src="../icons/storage.svg" ref="H"></img>
+      <img class="tab-icon" src="../icons/analysis.svg" ref="A"></img>
 
-      <i class="fas fa-chalkboard-teacher tab selected" ref="C"></i>
-      <i class="tab fas fa-history" ref="H"></i>
-      <i class="far fa-chart-bar tab" ref="A"></i>
+      <!-- <i class="fas fa-chalkboard-teacher tab selected" ref="C"></i> -->
+      <!-- <i class="tab fas fa-history" ref="H"></i>
+      <i class="far fa-chart-bar tab" ref="A"></i> -->
       <!-- <div class="tab">A</div> -->
 
     </div>
@@ -44,7 +45,8 @@
       <div class="class-selector grow main">
         <div class="selected-class">
           <p>Classss</p>
-          <i class="fas fa-caret-down select-symbol"></i>
+          <img class="select-symbol" src="../icons/down-arrow.svg"></img>
+
         </div>
 
         <div class="drop-menu">
@@ -69,7 +71,7 @@
   <template id="speaker-bar">
     <div class="bar">
       <div class="image-container">
-        <img draggable="false" class="bar-img"
+        <img class="bar-img"
         src="https://lh3.googleusercontent.com/a-/AOh14Gix2uH3dS4TB39w7t5AcERHMd1kGObMCMvIT3XTVw=s192-c-mo">
       </div>
       
@@ -93,14 +95,15 @@
         <div class="class-selector">
           <div class="selected-class">
             <p txt="Class">Classss</p>
-            <i class="fas fa-caret-down select-symbol"></i>
+            <img class="select-symbol" src="../icons/down-arrow.svg"></img>
           </div>
 
           <div class="drop-menu"></div>
         </div>
         <div class="filler"></div>
 
-        <i class="fas fa-trash"></i>
+        <img src="../icons/trash.svg" class="meeting-page-icon"></img>
+
 
       </div>
       <div class="meeting-data">

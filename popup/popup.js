@@ -56,12 +56,18 @@ window.onload = () => {
 }
 function setUpTabs() {
     $(".selected-class").on("click", toggleMenu);
-    $(".tab").click(function () {
+    $(".tab-icon").click(function () {
         page = $(this).attr("ref");
 
         $("#tab-container-heading").html(header_names[page]);
         $(".tab-container").css("display", "none");
-        $(".tab").removeClass("selected");
+        $(".tab-icon").each((_,tab)=>{
+            tab.src = tab.src.replace("-active","");
+
+            if(tab.getAttribute("ref")==page){
+                tab.src = tab.src.replace(".","-active.");
+            }
+        })
 
         $(".tab-container[ref=" + page + "]").css("display", "block");
         $(this).addClass("selected");
