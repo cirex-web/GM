@@ -15,7 +15,7 @@ class Meeting {
     nickname = undefined;
     start_time = undefined;
 }
-let debug = true;
+let debug = false;
 let injected_scripts = ["/external/jquery.js", "/external/arrive.js", "script.js"];
 let injected_styles = ["injected.css"];
 
