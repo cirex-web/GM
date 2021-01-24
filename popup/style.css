@@ -10,12 +10,16 @@ input{
     /* height: 100%; */
     margin: 0;
     box-sizing: border-box;
+    margin-right: 10px;
 }
 body{
+    position: relative;
     width: 400px;
     /* min-height: 100px; */
     margin: 0;
     border-radius: 10px;
+    height: auto;
+
 }
 span{
     font-weight: bold;
@@ -35,8 +39,11 @@ h1{
 }
 h2{
     margin: 0;
-    padding: 10px;
+    padding: 10px 0 10px 10px;
     font-size: 20px;
+}
+h3{
+    padding: 10px;
 }
 p{
     margin: 0;
@@ -47,6 +54,7 @@ p{
     padding: 10px 0;
     margin: 0 10px;
     flex-grow: 3;
+    font-weight: bold;
 }
 
 #full-disp{
@@ -68,10 +76,11 @@ p{
     color: white;
 }
 .tab-container{
+    overflow: scroll;
+    height: 500px;
     width: 100%;
     display: none;
     position: relative;
-
 }
 .content-container{
     position: relative;
@@ -208,7 +217,7 @@ p{
 .drop-menu{
     /* border-top: 2px solid black; */
     background: white;
-    /* max-height: 0px; */
+    max-height: 200px;
     transform: scaleY(0);
     transform-origin: top;
     width: 100%;
@@ -237,7 +246,12 @@ p{
 .drop-menu-item:hover{
     background: rgb(187, 186, 186);
 }
-
+.drop-menu-input,.drop-menu-item.active .drop-menu-text{
+    display: none;
+}
+.drop-menu-item.active .drop-menu-input, .drop-menu-text{
+    display: flex;
+}
 .element-container{
     position: relative;
     border-radius: 10px;
@@ -246,10 +260,17 @@ p{
     overflow: hidden;
     /* background: rgb(187, 187, 187); */
     background: white;
+    transition: .2s all;
+    opacity: 1;
 }
+
 .element-container.no-hidden-overflow{
     /* border: none; */
     overflow: visible;
+
+}
+.element-container.removed{
+    transform: scale(0);
 }
 .element-container.flex{
     justify-content: center;
@@ -263,6 +284,7 @@ p{
     /* justify-content: center; */
     align-items: center;
     transition: .3s all;
+
 }
 .fa-trash{
     margin-right: 10px;
@@ -301,7 +323,18 @@ p{
     transition: .4s all;
     margin-left: 10px;
 }
-
+.credits{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    padding: 5px;
+    z-index: 10;
+    box-sizing: border-box;
+    /* background: black; */
+    color: black;
+    width: 100%;
+    text-align: center;
+}
 img[ref]{
     position: relative;
     flex-grow: 1;
@@ -320,4 +353,14 @@ img[ref]:hover{
 }
 .meeting-page-icon:hover{
     transform: scale(1.1);
+}
+.graph{
+    margin: 10px;
+}
+#meeting-data-container{
+    opacity: 0;
+    transition: .3s all;
+}
+#meeting-data-container.active{
+    opacity: 1;
 }

@@ -178,7 +178,7 @@ let utilFunctions = {
 }
 
 let meet_code = $('[data-meeting-code]').attr('data-meeting-code') || $('[data-unresolved-meeting-id]').attr('data-unresolved-meeting-id');
-let meeting_data, user_database;
+let cur_meeting, user_database;
 
 for (n of Object.keys(ELEMENTS)) {
     ELEMENTS[n] = new El(ELEMENTS[n]);
@@ -195,7 +195,7 @@ document.arrive(ELEMENTS.LIST_ITEM.formQuery(), function () {
 });
 
 function prepareToRun() {
-    if (meeting_data && user_database) {
+    if (cur_meeting && user_database) {
         run();
     } else {
         setTimeout(() => {
@@ -278,29 +278,29 @@ async function run() {
 }
 function listenForUpdates(){
     $("data_transfer")[0].addEventListener('send_data', function (e) {
-        meeting_data = e.detail.meeting_data;
+        cur_meeting = e.detail.meeting_data;
         user_database = e.detail.user_database;
     
     
-        console.log("meeting data and user database: ", meeting_data, user_database);
+        console.log("meeting data and user database: ", cur_meeting, user_database);
         try {
             let found = false;
     
-            for (let meet of meeting_data) {
+            for (let meet of cur_meeting) {
                 if (meet.meeting_code === meet_code) {
     
-                    meeting_data = meet;
+                    cur_meeting = meet;
                     found = true;
     
                     break;
                 }
             }
             if (!found) {
-                meeting_data = meeting_data[meeting_data.length - 1];
-                meeting_data.meeting_code = meet_code;
+                cur_meeting = cur_meeting[cur_meeting.length - 1];
+                cur_meeting.meeting_code = meet_code;
     
             }
-            console.log("cur_meeting: ", meeting_data);
+            console.log("cur_meeting: ", cur_meeting);
     
     
         } catch (e) {
@@ -309,7 +309,9 @@ function listenForUpdates(){
     
     });
     $("data_transfer")[0].addEventListener('cur_meeting_update', function (e){
-        cur_meeting.category = e.detail.cur_meeting.category;
+        cur_meeting.category = e.detail.meeting_category;
+        console.log(cur_meeting.category);
+
     });
 }
 function createDataPool() {
@@ -319,9 +321,9 @@ function createDataPool() {
 }
 function setUpMeetingData() {
     let nickname = ELEMENTS.MEETING_NICKNAME.getEl().html().toString();
-    meeting_data.nickname = nickname.includes(" ") ? undefined : nickname;
-    if (!meeting_data.start_time) {
-        meeting_data.start_time = + new Date();
+    cur_meeting.nickname = nickname.includes(" ") ? undefined : nickname;
+    if (!cur_meeting.start_time) {
+        cur_meeting.start_time = + new Date();
     }
 }
 function init_sidebar() {
@@ -421,9 +423,9 @@ function registerUsers() {
             } else {
                 user.NAME = USER_NAME;
             }
-            let user_in_meet = meeting_data.user_data[USER_ID];
-            if (!local.registered_users || (local.registered_users && !meeting_data.user_data[USER_ID])) {
-                meeting_data.user_data[USER_ID] = {
+            let user_in_meet = cur_meeting.user_data[USER_ID];
+            if (!local.registered_users || (local.registered_users && !cur_meeting.user_data[USER_ID])) {
+                cur_meeting.user_data[USER_ID] = {
                     speaking_time: user_in_meet ? user_in_meet.speaking_time : 0,
                     is_speaking: false,
                     before_time: undefined,
@@ -478,14 +480,14 @@ function injectFunctions() {
 function updateSpeakerData(speaker_el, class_added) {
     if (!local.sidebar_init.phase_two) return;
     let list_container = speaker_el.closest(ELEMENTS.LIST_ITEM.formQuery());
-    meeting_data.lastUpdated = + new Date();
+    cur_meeting.lastUpdated = + new Date();
     if (list_container != null) {
 
         if ($(list_container).find("." + CLASS_NAMES.USER_PRESENTATION).length > 0 && OPTIONS.NO_PRESENTATIONS) {
             return;
         }
 
-        let user = meeting_data.user_data[getUserImage(list_container)];
+        let user = cur_meeting.user_data[getUserImage(list_container)];
 
         if (class_added === CLASS_NAMES.USER_MUTED) { //GM doesn't update inner sound class if user mutes; it adds the class USER_MUTED to the parent.
             stopTrackingUserTime(user, list_container);
@@ -546,7 +548,7 @@ function matches(element, obj) {
 function updateStorage() {
     const event = new CustomEvent('terry_time', {
         detail: {
-            meeting_data: meeting_data,
+            meeting_data: cur_meeting,
             user_database: user_database
         }
     });

@@ -8,16 +8,152 @@ let STR = {
 let user_database, cur_meeting, meeting_database; //these are the variables that contain the current meeting data (they're updated automatically and updateSpeakerData() is called everytime there's an update.)
 let timeGraph_obj;
 let page;
+let seenAnalysis = false;
 let timer_graph_data = [];
 let sorted_meetings = [];
 
 let header_names = {
-    'D': "Debug",
     'C': "Current Meeting",
     "H": "Meeting History",
     "A": "Analysis"
 }
+let graph_templates = {
+    main_bar: {
+        chart: {
+            type: 'bar',
+            toolbar: {
+                show: false
+            },
+            events: {
+                click: function (_, _, config) {
+                    let i = config.dataPointIndex;
+                    if (i != -1) {
+                        let cat = main_bar_data[i][0];
+                        let data_one = [];
+                        let data_two_raw = [];
+                        let data_two = [];
+                        for(let meet of meeting_database[cat]){
+                            let t =0;
+                            for(let [id,user] of Object.entries(meet.user_data)){
+                                if(!data_two_raw[user_database[id].NAME]){
+                                    data_two_raw[user_database[id].NAME]=[user.speaking_time,1];
+                                }else{
+                                    data_two_raw[user_database[id].NAME][0]+=user.speaking_time;
+                                    data_two_raw[user_database[id].NAME][1]++;
+
+                                }
+
+                                
+                                t+=user.speaking_time;
+                            }
+
+
+                            t/=60000;
+                            t = parseInt(t*100)/100;
+                            data_one.push([meet.lastUpdated,t]);
+                        }
+                        for([key,val] of Object.entries(data_two_raw)){
+                            data_two.push([key,parseInt(val[0]/val[1]/60000*100)/100]);
+                        }
+                        data_two.sort((a,b)=>b[1]-a[1]);
+                        data_two = data_two.slice(1,7);
+                        console.log(data_one,data_two_raw);
+
+                        $("#meeting-graph-one").html("");
+                        $("#meeting-graph-two").html("");
+
+                        createChart(undefined,data_one,"Speaking Time",$("#meeting-graph-one")[0],"meeting_bar_one");
+                        createChart(arCol(data_two,0),arCol(data_two,1),"Minutes",$("#meeting-graph-two")[0],"meeting_bar_two");
+
+                        setTimeout(()=>{
+                            $("#meeting-data-container")[0].scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"});
+                        },100);
+                        $("#meeting-title span").html(cat)
+                        $("#meeting-data-container").addClass("active");
+                    }
+
+                }
+            },
+        },
+        dataLabels: {
+            enabled: false,
+            formatter: function (val) {
+                return val + " min";
+            },
+        },
+        plotOptions: {
+            bar: {
+                horizontal: true,
+            }
+        },
+        title: {
+            text: "Avg. Total Speaking Time per Class",
+            align: "left",
+            floating: false,
+            margin: 10,
+            style: {
+                fontSize: "20px"
+            }
+        }
+    },
+    meeting_bar_one: {
+        chart: {
+            height: 142,
+            width: "100%",
+            type: "line",
+            toolbar: {
+                show: false
+            }
+        },
+        xaxis: {
+            type: 'datetime'
+        },
+        title: {
+            text: "Speaking Time History",
+            align: "left",
+            floating: false,
+            margin: 10,
+            style: {
+                fontSize: "20px"
+            }
+        }
+    },
+    meeting_bar_two:{
+        chart: {
+            height: 200,
+            width: "100%",
+            type: "bar",
+            toolbar: {
+                show: false
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        title: {
+            text: "Most Active Students (Teacher Hidden)",
+            align: "left",
+            floating: false,
+            margin: 10,
+            style: {
+                fontSize: "15px"
+            }
+        },
+        plotOptions: {
+            bar: {
+                horizontal: true,
+            }
+        }
+        
+
+    }
+
+}
+let main_bar_data = [];
+
+
 const fac = new FastAverageColor();
+const arCol = (arr, n) => arr.map(x => x[n]);
 
 /*
 //user_database contains every seen user
@@ -52,7 +188,30 @@ Value:{
 window.onload = () => {
     getAllData();
     setUpTabs();
+
+
     chrome.storage.onChanged.addListener(processStorageChanges);
+}
+function createChart(x, y, label_name, container, template_name) {
+
+    let options = $.extend({}, graph_templates[template_name], {
+        series: [{
+            name: label_name,
+            data: y
+        }],
+
+
+    });
+    if (x) {
+        $.extend(options,{
+            xaxis: {
+                categories: x
+            }
+        });
+    }
+    var chart = new ApexCharts(container, options);
+
+    chart.render();
 }
 function setUpTabs() {
     $(".selected-class").on("click", toggleMenu);
@@ -61,34 +220,62 @@ function setUpTabs() {
 
         $("#tab-container-heading").html(header_names[page]);
         $(".tab-container").css("display", "none");
-        $(".tab-icon").each((_,tab)=>{
-            tab.src = tab.src.replace("-active","");
+        $(".tab-icon").each((_, tab) => {
+            tab.src = tab.src.replace("-active", "");
 
-            if(tab.getAttribute("ref")==page){
-                tab.src = tab.src.replace(".","-active.");
+            if (tab.getAttribute("ref") == page) {
+                tab.src = tab.src.replace(".", "-active.");
             }
-        })
+        });
+
 
         $(".tab-container[ref=" + page + "]").css("display", "block");
+        if (page == "A" && !seenAnalysis) {
+            renderMainCharts();
+            seenAnalysis = true;
+        }
         $(this).addClass("selected");
     });
     $("[ref='C']").click();
 }
+function renderMainCharts() {
+    for (let cat of Object.keys(meeting_database)) {
+        let total = 0;
+
+        for (let meeting of meeting_database[cat]) {
+            for (let user of Object.values(meeting.user_data)) {
+                total += user.speaking_time;
+            }
+        }
+        total /= meeting_database[cat].length;
+        total /= 60000;
+        if (total > 1) {
+            main_bar_data.push([cat, parseInt(total)]);
+
+        }
+    }
+    main_bar_data.sort((a, b) => b[1] - a[1]);
+    createChart(arCol(main_bar_data, 0), arCol(main_bar_data, 1), "Minutes", $("#main-bar")[0], "main_bar");
+}
 function processStorageChanges(changes) {
     $("#full-disp").css('display', 'none');
+    let cur_meet_update = false;
     for (var key in changes) {
         let change_obj = changes[key]
         let cur_change = change_obj.newValue;
         if (key === STR.cur_meetings) {
             updateCurMeetingData(cur_change);
+            cur_meet_update = true;
         } else if (key === STR.users) {
             user_database = cur_change;
             console.log("updated user_database to ", user_database);
+            cur_meet_update = true;
 
         }
     }
-    console.log(cur_meeting);
-    updateSpeakerData3(cur_meeting, $("#speaker-graph"));
+    if (cur_meet_update) {
+        updateSpeakerData3(cur_meeting, $("#speaker-graph"));
+    }
 }
 function getAllData(first_time = true) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -124,23 +311,22 @@ function getAllData(first_time = true) {
 }
 function addDropMenuListener() {
     $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
-        let $list_item = $(ev.target);
+        let $list_item = $(ev.target).closest('.drop-menu-item');
         if ($list_item.closest("[type='add-new']").length == 0) {
             let original_category = $list_item.closest(".class-selector").find(".selected-class p").html();
-            let chosen_category = $list_item.html();
-            if($list_item.closest(".main").length>0){
+            let chosen_category = $list_item.find(".drop-menu-text").html();
+            if ($list_item.closest(".main").length > 0) {
                 cur_meeting.category = chosen_category;
                 chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                    chrome.tabs.sendMessage(tabs[0].id, { type: "cur_meeting_update" , category: chosen_category}, async function (data) {
-            
-                        if (chrome.runtime.lastError) {
-                            console.log("you shouldn't see this lol");
-                        } 
-                    });
+                    chrome.tabs.sendMessage(tabs[0].id, { type: "cur_meeting_update", category: chosen_category });
                 });
-            }else{
+            } else {
                 let moved_meeting = sorted_meetings[parseInt($list_item.closest(".element-container").attr("id"))];
-                meeting_database[original_category] = meeting_database[original_category].filter(item => item!=moved_meeting);
+                console.log(moved_meeting);
+                console.log(meeting_database[original_category]);
+                meeting_database[original_category] = meeting_database[original_category].filter(item => item != moved_meeting);
+                console.log(meeting_database[original_category]);
+                moved_meeting.category = chosen_category;
                 meeting_database[chosen_category].push(moved_meeting);
             }
             updateMeetingStorage();
@@ -148,10 +334,18 @@ function addDropMenuListener() {
             class_header.find("p").html(chosen_category);
             toggleMenu($list_item);
         } else {
-            if($list_item.closest("[ready='true'").length==0){
-                $list_item.html('<input type="text">');
-                $list_item.attr('ready','true');
+            if ($list_item.closest("[ready='true']").length == 0) {
+                $list_item.addClass('active');
+                $list_item.attr('ready', 'true');
                 $list_item.find('input').focus();
+                $list_item.find('img').on('click', function () {
+                    let cat = $(this).closest(".drop-menu-input").find("input").val();
+                    if (addCategory(cat)) {
+                        createListItem(undefined, cat, false).insertBefore($list_item);
+
+                    }
+                });
+
             }
 
         }
@@ -160,13 +354,22 @@ function addDropMenuListener() {
         ev.stopPropagation();
     });
 }
+function addCategory(cat) {
+    if (cat != "" && !meeting_database[cat]) {
+        meeting_database[cat] = [];
+        updateMeetingStorage();
+        return true;
+    } else {
+        return false;
+    }
+}
 function toggleMenu(this1) {
 
     let $menu = $(this).closest(".class-selector").find(".drop-menu");
     if ($menu.length == 0) {
         $menu = this1.closest(".class-selector").find(".drop-menu");
     }
-    if($menu.attr('moving')){
+    if ($menu.attr('moving')) {
         return;
     }
 
@@ -177,31 +380,36 @@ function toggleMenu(this1) {
         for (let cat of Object.keys(meeting_database)) {
             createListItem($menu, cat);
         }
-        createListItem($menu,"Add Class...",true);
+        createListItem($menu, "Add Class...", true);
 
 
 
     } else {
-        $menu.attr('moving','true');
+        $menu.attr('moving', 'true');
         setTimeout(() => {
             for (let item of $menu.children()) {
                 let $item = $(item);
                 $item.remove();
 
             }
-            $menu.attr('moving','');
+            $menu.attr('moving', '');
 
         }, 400);
     }
 
 }
-function createListItem($menu, content, add_class = false){
+function createListItem($menu, content, add_class = false) {
     let clone = $("#drop-menu-item")[0].content.cloneNode(true);
-    clone.querySelector(".drop-menu-item").innerHTML = content;
-    if(add_class){
-        clone.querySelector(".drop-menu-item").setAttribute('type',"add-new");
+    clone.querySelector(".drop-menu-text").innerHTML = content;
+    if (add_class) {
+        clone.querySelector(".drop-menu-item").setAttribute('type', "add-new");
     }
-    $menu.append(clone);
+    if ($menu) {
+        $menu.append(clone);
+
+    } else {
+        return $(clone);
+    }
 }
 function setUpMeetingsPage() {
     for (let cat of Object.keys(meeting_database)) {
@@ -214,7 +422,7 @@ function setUpMeetingsPage() {
     for (let [i, meeting] of sorted_meetings.entries()) {
         let clone = $("#meeting-data")[0].content.cloneNode(true);
         let $clone = $(clone);
-        $clone.find(".meeting-top p").html(meeting.category);
+        $clone.find(".meeting-top .class-name").html(meeting.category);
         $clone.find(".date").html(generateDate(meeting.lastUpdated));
         $clone.find(".code").html(meeting.meeting_code);
         $clone.find(".element-container").attr('id', i);
@@ -223,7 +431,9 @@ function setUpMeetingsPage() {
 
     }
     $(".meeting-top").on('click', function (ev) {
-        console.log("clicked");
+        if ($(ev.target).hasClass('trash')) {
+            return;
+        }
         let $element_container = $(this).closest('.element-container');
         let $bottom = $element_container.find(".meeting-data");
         let $drop_menu = $(this).find(".drop-menu");
@@ -245,9 +455,21 @@ function setUpMeetingsPage() {
 
 
     });
+    $(".trash").on('click', function () {
+        let $container = $(this).closest(".element-container");
+        let id = parseInt($container.attr("id"));
+        let cat = sorted_meetings[id].category;
+        meeting_database[cat] = meeting_database[cat].filter(item => item != sorted_meetings[id]);
+        $container.addClass("removed");
+        updateMeetingStorage();
+        setTimeout(() => {
+            $container.remove();
+
+        }, 200);
+    });
     $(".class-selector").on('mouseover mouseleave', function (ev) {
         $this = $(this);
-        if (ev.type == "mouseover" && $this.closest(".element-container").find(".meeting-data").hasClass("active")) {
+        if (ev.type == "mouseover" && ($this.hasClass('main') || $this.closest(".element-container").find(".meeting-data").hasClass("active"))) {
 
             $this.addClass("active");
         } else {
@@ -259,9 +481,9 @@ function setUpMeetingsPage() {
 
     });
 }
-function generateDate(mm){
+function generateDate(mm) {
     let date = new Date(mm);
-    return date.toLocaleString("en-US", {timeZoneName: "short"});
+    return date.toLocaleString("en-US", { timeZoneName: "short" });
 }
 function getFromStorage(key) {
     return new Promise((re) => {
@@ -270,8 +492,9 @@ function getFromStorage(key) {
         });
     });
 }
-function updateMeetingStorage(){
-    chrome.storage.sync.set({[STR.all_other_meetings]: meeting_database});
+function updateMeetingStorage() {
+    // console.log("updating meeting storage");
+    chrome.storage.local.set({ [STR.all_other_meetings]: meeting_database });
 }
 function updateSpeakerData3(meeting, chart, max_items = 1, one_time = false) {
 
@@ -510,6 +733,7 @@ function updateCurMeetingData(change) {
 //     }
 // });
 
+/*
 function updateSpeakerData2(old_data, new_data) {
     if (!timeGraph_obj) {
         return;
@@ -692,3 +916,4 @@ function createChart() {
     });
     // the getColorAsync function is necessary to get the average color of an unloaded image, but the way it is right now results in color_set being an empty set when the graph is made
 }
+*/

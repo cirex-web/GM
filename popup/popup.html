@@ -12,6 +12,8 @@
   <script src="/external/moment.js"></script>
   <script src="/external/tippy-core.js"></script>
   <script src="/external/tippy.js"></script>
+  <script src="/external/apex.js"></script>
+
   <link rel="stylesheet" href="/external/scale.css"/>
   <script src="popup.js"></script>
 
@@ -22,7 +24,7 @@
 <body>
   <div id="header-container">
     <div id="header">
-      <div class="title">GM Talk Tracker</div>
+      <div class="title">Clock it!</div>
 
       <img class="tab-icon" src="../icons/call.svg" ref="C"></img>
       <img class="tab-icon" src="../icons/storage.svg" ref="H"></img>
@@ -39,7 +41,9 @@
   </div>
 
   <div class="tab-container" ref="C">
-
+    <div class='credits'>
+      Credits: Developer - Eric Xu
+    </div>
     <div class="element-container no-hidden-overflow flex">
       <h2>Current Class: </h2>
       <div class="class-selector grow main">
@@ -49,8 +53,7 @@
 
         </div>
 
-        <div class="drop-menu">
-        </div>
+        <div class="drop-menu"></div>
       </div>
 
     </div>
@@ -63,10 +66,26 @@
     <div id="full-disp"></div>
   </div>
   <div class="tab-container" ref="H">
-
+    <h3>
+      Meetings last updated over 30 minutes ago will show up here.
+    </h3>
   </div>
   <div class="tab-container" ref="A">
+    <div class="element-container">
+      <div class="graph" id="main-bar"></div>
+    </div>
+    <div id="meeting-data-container">
+      <h1 id="meeting-title">Data breakdown for <span>iojij</span></h1>
+      <div class="element-container">
+        <div class="graph" id="meeting-graph-one"></div>
+      </div>
+      <div class="element-container">
+        <div class="graph" id="meeting-graph-two"></div>
+      </div>
+    </div>
+    
   </div>
+
   </div>
   <template id="speaker-bar">
     <div class="bar">
@@ -84,7 +103,15 @@
   </template>
   <template id="drop-menu-item">
     <div class="drop-menu-item">
-      Class 1
+      <div class="drop-menu-text">
+        Class 1
+      </div>
+      <div class="drop-menu-input">
+        <input type="text">
+        <img src="../icons/add.svg"></img>
+
+      </div>
+      
     </div>
 
     
@@ -94,7 +121,7 @@
       <div class="meeting-top">
         <div class="class-selector">
           <div class="selected-class">
-            <p txt="Class">Classss</p>
+            <p class="class-name" txt="Meet">Classss</p>
             <img class="select-symbol" src="../icons/down-arrow.svg"></img>
           </div>
 
@@ -102,7 +129,7 @@
         </div>
         <div class="filler"></div>
 
-        <img src="../icons/trash.svg" class="meeting-page-icon"></img>
+        <img class="trash meeting-page-icon" src="../icons/trash.svg" class="meeting-page-icon"></img>
 
 
       </div>
