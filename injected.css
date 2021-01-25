@@ -5,8 +5,10 @@
     z-index: 567777;
     /* width: 0; */
     overflow: hidden;
+    opacity: 0;
 }
 [role='listitem']{
+    opacity: 0 !important;
     height: 1px !important;
     /* opacity: 0; */
 }

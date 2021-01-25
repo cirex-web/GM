@@ -45,22 +45,24 @@ if (window.location.pathname !== "/") {
                     break;
                 }
             }
-
-            for (let i = 0; i < all_cur_meetings.length;) {
+            let i = all_cur_meetings.length-1;
+            console.log(all_cur_meetings);
+            while(i>=0){
                 if (isExpired(all_cur_meetings[i])) {
                     //Removes meet from current meetings list and puts it into long-term storage
-                    let removed_meet = all_cur_meetings.splice(i, i + 1)[0];
+                    let removed_meet = all_cur_meetings.splice(i,1)[0];
                     if (meeting_database[removed_meet.category]) {
                         meeting_database[removed_meet.category].push(removed_meet);
                     } else {
                         meeting_database[removed_meet.category] = [removed_meet];
                     }
-                } else {
-
-                    i++;
                 }
+                i--;
             }
+            console.log(all_cur_meetings);
+
             setInStorage(STR.all_other_meetings, meeting_database);
+            setInStorage(STR.cur_meetings, all_cur_meetings);
 
             if (addNewMeeting) {
                 all_cur_meetings.push(new Meeting());

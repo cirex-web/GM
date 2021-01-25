@@ -337,8 +337,12 @@ function init_sidebar() {
                         setTimeout(() => {
                             if (ELEMENTS.LIST_ITEM.getEl().width()>1 && local.clicked_sidebar) {
                                 ELEMENTS.LIST_ITEM.getEl().css('cssText', 'height: 56px !important;');
+                                ELEMENTS.LIST_ITEM.getEl().css('cssText', 'opacity: 1 !important;');
+
                             } else {
                                 ELEMENTS.LIST_ITEM.getEl().css('height', '');
+                                ELEMENTS.LIST_ITEM.getEl().css('opacity', '');
+
                             }
                         }, 50);
 
