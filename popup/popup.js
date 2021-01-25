@@ -59,7 +59,7 @@ let graph_templates = {
                         data_two.sort((a,b)=>b[1]-a[1]);
                         data_two = data_two.slice(1,7);
                         console.log(data_one,data_two_raw);
-
+                        data_one.sort((a,b)=>a[0]-b[0]);
                         $("#meeting-graph-one").html("");
                         $("#meeting-graph-two").html("");
 
@@ -260,9 +260,9 @@ function renderMainCharts() {
             }
         }
         total /= meeting_database[cat].length;
-        total /= 1000;
+        total /= 60000;
         if (total > 0) {
-            main_bar_data.push([cat, parseInt(total)/60]);
+            main_bar_data.push([cat, total.toFixed(2)]);
 
         }
     }
