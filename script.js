@@ -107,7 +107,7 @@ let OPTIONS = {
     NO_PRESENTATIONS: true
 }
 let captured_users = [];
-let CLASS_NAMES = {
+let CLASS_NAMES = { //Mapping class names into human-readable ones.
     SIDEBAR_OPEN: "kjZr4",
     USER_NAME: "ZjFb7c",
     USER_YOU: "QMC9Zd",
@@ -127,13 +127,13 @@ let local = {
     registered_users: false
 }
 
-
+//Functions that directly modify Google's source code
 let utilFunctions = {
     REMOVE_CLASS: {
         snippet: "a.classList.remove(b)",
-        func: (a, b) => {
+        func: (element, class_name) => {
             try {
-                if (matches(a, ELEMENTS.SIDE_BAR) && b == CLASS_NAMES.SIDEBAR_OPEN) {
+                if (matches(element, ELEMENTS.SIDE_BAR) && class_name == CLASS_NAMES.SIDEBAR_OPEN) {
                     local.clicked_sidebar = false;
 
                     if (local.sidebar_init.phase_one && !local.sidebar_init.phase_two) {
@@ -156,7 +156,7 @@ let utilFunctions = {
             try {
 
                 if (matches(element, ELEMENTS.SIDE_BAR) && class_name == CLASS_NAMES.SIDEBAR_OPEN) {
-                    ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexShrink = 999999999;//wait for element
+                    ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.flexShrink = 999999999;//Hidden to the user but still acessible by the script :) 
 
                     if (!local.sidebar_init.phase_one) {
                         local.sidebar_init.phase_one = true;
@@ -310,8 +310,7 @@ function listenForUpdates(){
     });
     $("data_transfer")[0].addEventListener('cur_meeting_update', function (e){
         cur_meeting.category = e.detail.meeting_category;
-        console.log(cur_meeting.category);
-
+        updateStorage();
     });
 }
 function createDataPool() {
@@ -326,7 +325,7 @@ function setUpMeetingData() {
         cur_meeting.start_time = + new Date();
     }
 }
-function init_sidebar() {
+function init_sidebar() { //this bit of code just sets up the sidebar for data-gathering. 
     return new Promise((re) => {
         let side = ELEMENTS.SIDE_BAR.getEl();
         side.arrive(ELEMENTS.CLOSE.formQuery(), { existing: true, onceOnly: true }, () => {
@@ -377,39 +376,7 @@ function cloneListEl($element) {
 
     }, 10);
 }
-function updateClone() {
-    console.log("cloning sidebar");
 
-    let $cloned_sidebar = ELEMENTS.SIDE_BAR.getEl().clone();
-    $cloned_sidebar.css("position", "absolute"); //TODO: Maybe move these into css file
-    $cloned_sidebar.css("top", "10px");
-    $cloned_sidebar.css("left", "10px");
-    $cloned_sidebar.css("width", "360px");
-    $cloned_sidebar.each(function () {
-        var attributes = $.map(this.attributes, function (item) {
-            return item.name;
-        });
-        var img = $(this);
-        $.each(attributes, function (i, item) {
-            img.removeAttr(item);
-        });
-    });
-    $cloned_sidebar.prop('id', 'clone');
-    $("#clone").remove();
-    ELEMENTS.SIDE_BAR.getEl().parent().append($cloned_sidebar);
-    let options = {
-        childList: true,
-        attributes: false,
-        characterData: false,
-        subtree: false,
-        attributeOldValue: false,
-        characterDataOldValue: false
-    };
-    const observer = new MutationObserver(updateClone);
-    observer.observe(ELEMENTS.PEOPLE_NUM.getEl()[0], options);
-
-
-}
 function registerUsers() {
     try {
         for (el of ELEMENTS.LIST_ITEM.getEl()) {
@@ -549,7 +516,7 @@ function matches(element, obj) {
     return element.getAttribute(obj.type) == obj.str;
 }
 function updateStorage() {
-    const event = new CustomEvent('terry_time', {
+    const event = new CustomEvent('merge_cur_meeting', {
         detail: {
             meeting_data: cur_meeting,
             user_database: user_database

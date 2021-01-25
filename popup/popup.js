@@ -190,6 +190,9 @@ window.onload = () => {
     getAllData();
     setUpTabs();
 
+    getVersion((version)=>{
+        $("#version").html(version);
+    });
 
     chrome.storage.onChanged.addListener(processStorageChanges);
 }
@@ -509,7 +512,7 @@ function setUpMeetingsPage() {
 
     });
     tippy('.question',{
-        content: "This meeting is ongoing and has not been moved to permanent storage."
+        content: "This meeting is ongoing and has not yet been moved to permanent storage."
     })
 }
 function generateDate(mm) {
@@ -648,6 +651,15 @@ function updateCurMeetingData(change) {
         }
     }
 
+}
+function getVersion(callback) {
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.open('GET', '../manifest.json');
+    xmlhttp.onload = function (e) {
+        var manifest = JSON.parse(xmlhttp.responseText);
+        callback(manifest.version);
+    }
+    xmlhttp.send(null);
 }
 
 

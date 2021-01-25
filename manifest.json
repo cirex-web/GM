@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "GM",
-    "version":"0.1",
+    "version":"0.2.0",
     "browser_action":{
         "default_popup": "/popup/popup.html"
     },
@@ -17,6 +17,10 @@
     "content_security_policy": "style-src 'self' 'sha256-Ucye6igbBXX1kfOSQeZ4ymqY8ogge1RacRAkgcaiVxc=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-DiWU82cFIBGH7Ne2frmS4x7VCHwEoh4eM70g23XHRCc='",
     "web_accessible_resources": [
         "script.js","/popup/popup.js","injected.css","/external/*"
-      ]
+    ],
+    "background": {
+        "scripts": ["background.js"],
+        "persistent": false
+    }
  
 }

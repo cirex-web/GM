@@ -1,5 +1,4 @@
 // s.setAttribute('data-version', browser.runtime.getManifest().version)
-//TODO: Make this cleaner
 
 let STR = {
     cur_meetings: "cur_meetings",
@@ -33,128 +32,136 @@ if (window.location.pathname !== "/") {
 
 
         Promise.allSettled(promises).then(async (vals) => {
+            //Obtaining meeting information from storage and DOM
             all_cur_meetings = vals[0].value || [];
-            meet_code = $('[data-meeting-code]').attr('data-meeting-code');
             user_database = vals[1].value || {};
             meeting_database = vals[2].value || {};
 
-            let addNewMeeting = true;
-            for (let meet of all_cur_meetings) {
-                if (meet.meeting_code == meet_code && !isExpired(meet)) {
-                    addNewMeeting = false;
-                    break;
-                }
-            }
-            let i = all_cur_meetings.length-1;
-            console.log(all_cur_meetings);
-            while(i>=0){
-                if (isExpired(all_cur_meetings[i])) {
-                    //Removes meet from current meetings list and puts it into long-term storage
-                    let removed_meet = all_cur_meetings.splice(i,1)[0];
-                    if (meeting_database[removed_meet.category]) {
-                        meeting_database[removed_meet.category].push(removed_meet);
-                    } else {
-                        meeting_database[removed_meet.category] = [removed_meet];
-                    }
-                }
-                i--;
-            }
-            console.log(all_cur_meetings);
+            meet_code = $('[data-meeting-code]').attr('data-meeting-code');
 
-            setInStorage(STR.all_other_meetings, meeting_database);
-            setInStorage(STR.cur_meetings, all_cur_meetings);
+            processExpiredMeetings();
+            injectScriptsAndStuff();
+            addPopupListeners();
 
-            if (addNewMeeting) {
-                all_cur_meetings.push(new Meeting());
-            }
-            for (let script of injected_scripts) {
-                await new Promise((re) => {
-                    sendScript(script).onload = () => {
-                        re();
-                    }
-                });
-            }
-            for (let style of injected_styles) {
-                sendScript(style, true);
-            }
-            const event = new CustomEvent('send_data', {
-                detail: {
-                    meeting_data: all_cur_meetings,//TODO:????
-                    user_database: user_database
-                }
-            });
-            $("data_transfer")[0].dispatchEvent(event);
-            chrome.storage.onChanged.addListener(function(changes, namespace) {
-                for (var key in changes) {
-                  var storageChange = changes[key];
-                  if(key==STR.all_other_meetings){
-                      console.log("recieved update!",storageChange.newValue);
-                      meeting_database = storageChange.newValue;
-                  }
-                }
-            });
-            chrome.runtime.onMessage.addListener(
-                function (message, _, sendResponse) {
-                    switch (message.type) {
-                        case "get_meeting_data":
-                            sendResponse({
-                                cur_meeting: cur_meeting,
-                                user_database: user_database,
-                                all_cur_meetings: all_cur_meetings
-                            });
-                            // console.log("sending",cur_meeting,user_database);
-                        
-                            break;
-                        case "cur_meeting_update":
-                            const event = new CustomEvent('cur_meeting_update', {
-                                detail: {
-                                    meeting_category: message.category
-                                }//TODO:
-                            });
-                            console.log("send cat: "+message.category);
-                            $("data_transfer")[0].dispatchEvent(event);
-                        default:
-                            break;
-                    }
-                }
-            );
         });
 
-        $("data_transfer")[0].addEventListener('terry_time', function (e) {
-            cur_meeting = e.detail.meeting_data;
-
-            let merged = false
-            let defaultMeeting = -1;
-            for (let [i, meet] of all_cur_meetings.entries()) {
-                if (meet.meeting_code == cur_meeting.meeting_code) {
-                    all_cur_meetings[i] = cur_meeting;
-                    merged = true;
-                    break;
-                } else if (!meet.meeting_code) {
-                    defaultMeeting = i;
-                }
-            }
-
-            if (!merged) {
-                all_cur_meetings[defaultMeeting] = cur_meeting;
-                // cur_meetings_data.push(cur_meeting);
-            }
-
-            user_database = e.detail.user_database;
-            // console.log(user_database);
-            chrome.storage.local.set({
-                [STR.cur_meetings]: all_cur_meetings,
-                [STR.users]: user_database
-            });
-        });
+        addScriptListener();
     });
 
 } else {
     console.log("Not in meet");
 }
 
+function processExpiredMeetings() {
+    let i = all_cur_meetings.length - 1;
+    console.log(all_cur_meetings);
+    while (i >= 0) {
+        if (isExpired(all_cur_meetings[i])) {
+            //Removes meet from current meetings list and puts it into long-term storage
+            let removed_meet = all_cur_meetings.splice(i, 1)[0];
+            meeting_database[removed_meet.category].push(removed_meet);
+        }
+        i--;
+    }
+    all_cur_meetings.push(new Meeting());
+    for (let meet of all_cur_meetings) {
+        if (meet.meeting_code == meet_code) {
+            all_cur_meetings.pop();
+            break;
+        }
+    }
 
+    setInStorage(STR.all_other_meetings, meeting_database);
+    setInStorage(STR.cur_meetings, all_cur_meetings);
+}
+function addScriptListener(){
+    $("data_transfer")[0].addEventListener('merge_cur_meeting', async function (e) {
+        cur_meeting = e.detail.meeting_data;
+        let merged = false
+        let defaultMeeting = -1;
+        for (let [i, meet] of all_cur_meetings.entries()) {
+            if (meet.meeting_code == cur_meeting.meeting_code) {
+                all_cur_meetings[i] = cur_meeting;
+                merged = true;
+                break;
+            } else if (!meet.meeting_code) {
+                defaultMeeting = i;
+            }
+        }
 
+        if (!merged) {
+            all_cur_meetings[defaultMeeting] = cur_meeting;
+            // cur_meetings_data.push(cur_meeting);
+        }
+
+        user_database = e.detail.user_database;
+        // console.log(user_database);
+        chrome.storage.local.set({
+            [STR.cur_meetings]: all_cur_meetings,
+            [STR.users]: user_database
+        });
+    });
+}
+function addPopupListeners(){
+    chrome.storage.onChanged.addListener(function (changes) {
+        //Just to stay up-to-date with data changes (possibly from other meetings)
+        for (var key in changes) {
+            var storageChange = changes[key];
+            if (key == STR.all_other_meetings) {
+                meeting_database = storageChange.newValue;
+            } else if (key == STR.all_cur_meetings) {
+                all_cur_meetings = storageChange.newValue;
+            }
+        }
+    });
+    chrome.runtime.onMessage.addListener( //Recieving end of comms with popup.js
+        function (message, _, sendResponse) {
+            switch (message.type) {
+                case "get_meeting_data":
+                    sendResponse({
+                        cur_meeting: cur_meeting,
+                        user_database: user_database,
+                        all_cur_meetings: all_cur_meetings
+                    });
+
+                    break;
+                case "cur_meeting_update":
+                    const event = new CustomEvent('cur_meeting_update', {
+                        detail: {
+                            meeting_category: message.category
+                        }
+                    });
+                    $("data_transfer")[0].dispatchEvent(event);
+                    sendResponse({ ok: ":)" }); //my social life has become talking to various js scripts
+                default:
+                    break;
+            }
+        }
+    );
+}
+async function injectScriptsAndStuff() {
+    for (let script of injected_scripts) {
+        //Makes sure the scripts are loaded in order
+        await new Promise((re) => {
+            sendScript(script).onload = () => {
+                re();
+
+            }
+        });
+    }
+    for (let style of injected_styles) {
+        sendScript(style, true);
+    }
+    //Ready to send data over; script.js cannot access chrome.storage.local
+    const event = new CustomEvent('send_data', {
+        detail: {
+            meeting_data: all_cur_meetings,
+            user_database: user_database
+        }
+    });
+    $("data_transfer")[0].dispatchEvent(event);
+
+}
 function getFromStorage(key) {
     return new Promise((re) => {
         chrome.storage.local.get(key, function (result) {
@@ -187,13 +194,7 @@ function sendScript(name, style = false) {
 function isExpired(meet) {
     return debug || (new Date() - meet.lastUpdated) / (60000) >= 30;
 }
-async function debug1() {
-    let users = await getFromStorage(STR.users);
-    console.log(users["lh6-1iktIIrFuAUAAAAAAAAAAIAAAAAAAAAEYAMZuucmQDOe4JqRVbZ5J9p72-J_liiy-lws192-c-mophotojpg"]);
-    console.log(delete users["lh6-1iktIIrFuAUAAAAAAAAAAIAAAAAAAAAEYAMZuucmQDOe4JqRVbZ5J9p72-J_liiy-lws192-c-mophotojpg"]);
-    console.log(users["lh6-1iktIIrFuAUAAAAAAAAAAIAAAAAAAAAEYAMZuucmQDOe4JqRVbZ5J9p72-J_liiy-lws192-c-mophotojpg"]);
-    await setInStorage(STR.users, users);
-}
+
 // chrome.storage.local.set({key: value}, function() {
 //     console.log('Value is set to ' + value);
 //   });
