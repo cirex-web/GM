@@ -9,7 +9,7 @@ let STR = {
 let user_database, cur_meeting, meeting_database, all_cur_meetings;
 let timeGraph_obj;
 let page;
-let seenAnalysis = false;
+let seen_analysis = false, rendered_meetings_page = false;
 let timer_graph_data = [];
 let sorted_meetings = [];
 
@@ -240,11 +240,11 @@ function setUpTabs() {
 
 
         $(".tab-container[ref=" + page + "]").css("display", "block");
-        if (page == "A" && !seenAnalysis && meeting_database && meeting_database.length>0) {
+        if (page == "A" && !seen_analysis && meeting_database && Object.keys(meeting_database).length>0) {
             $("[ref='A'] .full-disp").css('display','none');
 
             renderMainCharts();
-            seenAnalysis = true;
+            seen_analysis = true;
         }
         $(this).addClass("selected");
     });
@@ -260,13 +260,14 @@ function renderMainCharts() {
             }
         }
         total /= meeting_database[cat].length;
-        total /= 60000;
-        if (total > 1) {
-            main_bar_data.push([cat, parseInt(total)]);
+        total /= 1000;
+        if (total > 0) {
+            main_bar_data.push([cat, parseInt(total)/60]);
 
         }
     }
     main_bar_data.sort((a, b) => b[1] - a[1]);
+    console.log(main_bar_data);
     createChart(arCol(main_bar_data, 0), arCol(main_bar_data, 1), "Minutes", $("#main-bar")[0], "main_bar");
 }
 function processStorageChanges(changes) {
@@ -289,7 +290,7 @@ function processStorageChanges(changes) {
         updateSpeakerData3(cur_meeting, $("#speaker-graph"));
     }
 }
-function getAllData(first_time = true) {
+function getAllData() {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, async function (data) {
 
@@ -316,10 +317,11 @@ function getAllData(first_time = true) {
             user_database = await getFromStorage(STR.users);
             all_cur_meetings = await getFromStorage(STR.all_cur_meetings);
 
-            if (first_time&&meeting_database) {
+            if (!rendered_meetings_page&&meeting_database) {
                 $("[ref='H'] .full-disp").css('display','none');
                 setUpMeetingsPage();
                 addDropMenuListener();
+                rendered_meetings_page = true;
             }
         })
     });
@@ -525,7 +527,7 @@ function updateMeetingStorage() {
     // console.log("updating meeting storage");
     chrome.storage.local.set({ [STR.all_other_meetings]: meeting_database });
 }
-function updateSpeakerData3(meeting, chart, max_items = 1, one_time = false) {
+function updateSpeakerData3(meeting, chart, max_items = 7, one_time = false) {
 
 
     let max = 1;

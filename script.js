@@ -336,12 +336,11 @@ function init_sidebar() {
                     $("body").on('click', 'div', () => {
                         setTimeout(() => {
                             if (ELEMENTS.LIST_ITEM.getEl().width()>1 && local.clicked_sidebar) {
-                                ELEMENTS.LIST_ITEM.getEl().css('cssText', 'height: 56px !important;');
-                                ELEMENTS.LIST_ITEM.getEl().css('cssText', 'opacity: 1 !important;');
+
+                                ELEMENTS.LIST_ITEM.getEl().css('cssText', 'opacity: 1 !important;height: 56px !important;');
 
                             } else {
-                                ELEMENTS.LIST_ITEM.getEl().css('height', '');
-                                ELEMENTS.LIST_ITEM.getEl().css('opacity', '');
+                                ELEMENTS.LIST_ITEM.getEl().css('cssText', '');
 
                             }
                         }, 50);
