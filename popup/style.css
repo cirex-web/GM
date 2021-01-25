@@ -100,6 +100,14 @@ p{
         transform: scale(20);
     }
 }
+@keyframes slide{
+    0%{
+        width: 0%;
+    }
+    100%{
+        width: 100%;
+    }
+}
 .tab-container{
     overflow: scroll;
     height: 450px;
@@ -155,15 +163,18 @@ p{
     z-index: 1;
 }
 .bar-bar{
+    /* transition: .2s all; */
     width: 0%;
-    background: black;
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     transition: .2s background;
     height: 100%;
     position: relative;
+    border: 2px solid black;
+    box-sizing: border-box;
 }
 .bar.active .bar-bar{
+    border-color: green;
     background: green;
 }
 .bar.active .bar-img{
@@ -174,12 +185,12 @@ p{
     left: 0px;
     top: 50%;
     transform: translate(0,-50%);
-    text-shadow: black 0px 0px 10px;
+    /* text-shadow: black 0px 0px 10px; */
     text-align: right;
     content: attr(val);
     position: absolute;
     right: 0px;
-    color: white;
+    color: black;
     font-size: 20px;
     white-space: nowrap;
     box-sizing: border-box;
@@ -193,10 +204,13 @@ p{
     left: 0;
 }
 .bar-bar-container{
-    flex-grow: 1;
+    /* flex-grow: 1; */
     height: 100%;
     /* margin-left: 20px; */
     position: relative;
+    animation: slide .3s ease-in-out .2s;
+    
+    animation-fill-mode: forwards;
 
     /* background: blue; */
 }
