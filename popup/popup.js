@@ -1,11 +1,12 @@
 let STR = {
     cur_meetings: "cur_meetings",
     users: "users",
-    all_other_meetings: "other_meetings"
+    all_other_meetings: "other_meetings",
+    all_cur_meetings: "cur_meetings"
 }
 //TODO: deal with page refresh... should refresh data or something
 
-let user_database, cur_meeting, meeting_database; //these are the variables that contain the current meeting data (they're updated automatically and updateSpeakerData() is called everytime there's an update.)
+let user_database, cur_meeting, meeting_database, all_cur_meetings;
 let timeGraph_obj;
 let page;
 let seenAnalysis = false;
@@ -215,22 +216,33 @@ function createChart(x, y, label_name, container, template_name) {
 }
 function setUpTabs() {
     $(".selected-class").on("click", toggleMenu);
-    $(".tab-icon").click(function () {
+    $(".tab-button").click(function (evt) {
+        let btn = $(evt.currentTarget);
+        let x = evt.pageX - btn.offset().left;
+        let y = evt.pageY - btn.offset().top;
         page = $(this).attr("ref");
-
+        let ripple = $(`<span class="ripple"></span>`).appendTo($(this)).css({
+            left: x,
+            top: y
+        });
+        setTimeout(()=>{
+            ripple.remove();
+        },500);
         $("#tab-container-heading").html(header_names[page]);
         $(".tab-container").css("display", "none");
         $(".tab-icon").each((_, tab) => {
             tab.src = tab.src.replace("-active", "");
 
-            if (tab.getAttribute("ref") == page) {
+            if ($(tab).closest("[ref='"+page+"']").length>0) {
                 tab.src = tab.src.replace(".", "-active.");
             }
         });
 
 
         $(".tab-container[ref=" + page + "]").css("display", "block");
-        if (page == "A" && !seenAnalysis) {
+        if (page == "A" && !seenAnalysis && meeting_database && meeting_database.length>0) {
+            $("[ref='A'] .full-disp").css('display','none');
+
             renderMainCharts();
             seenAnalysis = true;
         }
@@ -258,7 +270,6 @@ function renderMainCharts() {
     createChart(arCol(main_bar_data, 0), arCol(main_bar_data, 1), "Minutes", $("#main-bar")[0], "main_bar");
 }
 function processStorageChanges(changes) {
-    $("#full-disp").css('display', 'none');
     let cur_meet_update = false;
     for (var key in changes) {
         let change_obj = changes[key]
@@ -273,7 +284,8 @@ function processStorageChanges(changes) {
 
         }
     }
-    if (cur_meet_update) {
+    if (cur_meet_update&&cur_meeting) {
+        $("[ref='C'] .full-disp").css('display', 'none');
         updateSpeakerData3(cur_meeting, $("#speaker-graph"));
     }
 }
@@ -282,30 +294,33 @@ function getAllData(first_time = true) {
         chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, async function (data) {
 
             if (chrome.runtime.lastError) {
-                $("#full-disp").html("You aren't in a call yet!");
+                $("[ref='C'] .full-disp").html("You aren't in a call yet!");
 
             } else {
                 user_database = data.user_database;
                 cur_meeting = data.cur_meeting;
+                // all_cur_meetings = data.all_cur_meetings;
                 console.log("data retrieved: ", data);
 
                 if (!cur_meeting) {
-                    $("#full-disp").html("No data yet!");
+                    $("[ref='C'] .full-disp").html("No data yet!");
                 } else {
-                    $("#full-disp").css('display', 'none');
+                    $("[ref='C'] .full-disp").css('display', 'none');
 
                     updateSpeakerData3(cur_meeting, $("#speaker-graph"));
                     $(".selected-class p").html(cur_meeting.category);
                 }
             };
 
-
             meeting_database = await getFromStorage(STR.all_other_meetings);
             user_database = await getFromStorage(STR.users);
-            if (first_time) {
+            all_cur_meetings = await getFromStorage(STR.all_cur_meetings);
+
+            if (first_time&&meeting_database) {
+                $("[ref='H'] .full-disp").css('display','none');
                 setUpMeetingsPage();
+                addDropMenuListener();
             }
-            addDropMenuListener();
         })
     });
 }
@@ -417,11 +432,20 @@ function setUpMeetingsPage() {
             sorted_meetings.push(meeting);
         }
     }
+    for(let meeting of all_cur_meetings){
+        sorted_meetings.push($.extend(meeting,{
+            cur: true
+        }));
+    }
     sorted_meetings.sort((a, b) => b.lastUpdated - a.lastUpdated);
 
     for (let [i, meeting] of sorted_meetings.entries()) {
+
         let clone = $("#meeting-data")[0].content.cloneNode(true);
         let $clone = $(clone);
+        if(meeting.cur){
+            $clone.find(".element-container").addClass("live");   
+        }
         $clone.find(".meeting-top .class-name").html(meeting.category);
         $clone.find(".date").html(generateDate(meeting.lastUpdated));
         $clone.find(".code").html(meeting.meeting_code);
@@ -438,7 +462,7 @@ function setUpMeetingsPage() {
         let $bottom = $element_container.find(".meeting-data");
         let $drop_menu = $(this).find(".drop-menu");
         let class_selector = $(ev.target).closest(".selected-class");
-        if (class_selector.length > 0 && $bottom.hasClass("active")) {
+        if (class_selector.length > 0 && $bottom.hasClass("active") && !$(ev.target).closest(".element-container").hasClass('live')) {
 
             toggleMenu(class_selector);
 
@@ -470,8 +494,10 @@ function setUpMeetingsPage() {
     $(".class-selector").on('mouseover mouseleave', function (ev) {
         $this = $(this);
         if (ev.type == "mouseover" && ($this.hasClass('main') || $this.closest(".element-container").find(".meeting-data").hasClass("active"))) {
+            if(!$(ev.target).closest(".element-container").hasClass('live')){ 
+                $this.addClass("active");
 
-            $this.addClass("active");
+            }
         } else {
             if (!$this.find(".drop-menu").hasClass('active')) {
                 $this.removeClass("active");
@@ -480,6 +506,9 @@ function setUpMeetingsPage() {
         }
 
     });
+    tippy('.question',{
+        content: "This meeting is ongoing and has not been moved to permanent storage."
+    })
 }
 function generateDate(mm) {
     let date = new Date(mm);
@@ -607,12 +636,7 @@ function msToString(ms) {
 }
 function updateCurMeetingData(change) {
     if (!cur_meeting) {
-        for (let meet of change) {
-            if (!cur_meeting || meet.lastUpdated > cur_meeting.lastUpdated) { //fetches the latest updated meeting; TODO: might replace with direct query 
-                cur_meeting = meet;
-            }
-        }
-
+        getAllData();
     } else {
         for (let meet of change) {
             if (meet.meeting_code == cur_meeting.meeting_code) {

@@ -53,11 +53,16 @@ p{
 .title{
     padding: 10px 0;
     margin: 0 10px;
-    flex-grow: 3;
+    font-size: 20px;
     font-weight: bold;
+
+}
+.title span{
+    font-size: 15px;
+    color: gray;
 }
 
-#full-disp{
+.full-disp{
     justify-content: center;
     position: absolute;
     top: 0;
@@ -75,6 +80,26 @@ p{
     background: black;
     color: white;
 }
+.ripple{
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.3);
+    animation: ripple .5s linear;
+    animation-fill-mode: forwards;
+
+}
+@keyframes ripple{
+    0%{
+        opacity: 1;
+        transform: scale(0);
+    }
+    100%{
+        opacity: 0;
+        transform: scale(20);
+    }
+}
 .tab-container{
     overflow: scroll;
     height: 500px;
@@ -82,6 +107,7 @@ p{
     display: none;
     position: relative;
 }
+
 .content-container{
     position: relative;
 }
@@ -89,6 +115,7 @@ p{
     display: flex;
     font-size: 20px;
     background: white;
+    height: 2em;
 }
 #header-container{
     /* position: fixed; */
@@ -263,7 +290,9 @@ p{
     transition: .2s all;
     opacity: 1;
 }
-
+.element-container.live{
+    background: gold
+}
 .element-container.no-hidden-overflow{
     /* border: none; */
     overflow: visible;
@@ -286,9 +315,7 @@ p{
     transition: .3s all;
 
 }
-.fa-trash{
-    margin-right: 10px;
-}
+
 .meeting-top:hover{
     cursor: pointer;
     background: lightgray;
@@ -335,12 +362,17 @@ p{
     width: 100%;
     text-align: center;
 }
-img[ref]{
+.tab-button{
     position: relative;
     flex-grow: 1;
     text-align: center;
     padding: 7px 0;
-    transition: .3s all;
+    transition: .2s all;
+    overflow: hidden;
+    
+}
+.tab-button:hover{
+    cursor: pointer;
 }
 img[ref]:hover{
     cursor: pointer;
@@ -354,6 +386,9 @@ img[ref]:hover{
 .meeting-page-icon:hover{
     transform: scale(1.1);
 }
+.live .meeting-page-icon{
+    display: none;
+}
 .graph{
     margin: 10px;
 }
@@ -364,3 +399,12 @@ img[ref]:hover{
 #meeting-data-container.active{
     opacity: 1;
 }
+.question{
+    margin-right: 5px;
+    display: none;
+    /* height: 1em; */
+}
+.live .question{
+    display: block;
+}
+

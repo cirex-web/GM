@@ -23,12 +23,21 @@
 
 <body>
   <div id="header-container">
-    <div id="header">
-      <div class="title">Clock it!</div>
+    <div class="title">Clock it!<span> The Google Meet Participation Tracker</span></div>
 
-      <img class="tab-icon" src="../icons/call.svg" ref="C"></img>
-      <img class="tab-icon" src="../icons/storage.svg" ref="H"></img>
-      <img class="tab-icon" src="../icons/analysis.svg" ref="A"></img>
+    <div id="header">
+      <div class="tab-button" ref="C">
+        <img class="tab-icon" src="../icons/call.svg"></img>
+
+      </div>
+      <div class="tab-button" ref="H">
+        <img class="tab-icon" src="../icons/storage.svg" ></img>
+        
+      </div>
+      <div class="tab-button" ref="A">
+        <img class="tab-icon" src="../icons/analysis.svg"></img>
+
+      </div>
 
       <!-- <i class="fas fa-chalkboard-teacher tab selected" ref="C"></i> -->
       <!-- <i class="tab fas fa-history" ref="H"></i>
@@ -63,12 +72,12 @@
     </div>
 
 
-    <div id="full-disp"></div>
+    <div class="full-disp"></div>
   </div>
   <div class="tab-container" ref="H">
-    <h3>
-      Meetings last updated over 30 minutes ago will show up here.
-    </h3>
+
+    <div class="full-disp">No meetings saved</div>
+
   </div>
   <div class="tab-container" ref="A">
     <div class="element-container">
@@ -83,7 +92,8 @@
         <div class="graph" id="meeting-graph-two"></div>
       </div>
     </div>
-    
+    <div class="full-disp">No meetings to analyze...</div>
+
   </div>
 
   </div>
@@ -121,7 +131,10 @@
       <div class="meeting-top">
         <div class="class-selector">
           <div class="selected-class">
+            <img class="question" src="../icons/help.svg"></img>
+
             <p class="class-name" txt="Meet">Classss</p>
+            
             <img class="select-symbol" src="../icons/down-arrow.svg"></img>
           </div>
 

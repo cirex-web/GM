@@ -27,29 +27,29 @@ if (window.location.pathname !== "/") {
         let el = document.createElement("data_transfer");
         document.body.appendChild(el);
 
-        let cur_meetings_data, user_database, cur_meeting, meeting_database, meet_code;
+        let all_cur_meetings, user_database, cur_meeting, meeting_database, meet_code;
 
         let promises = [getFromStorage(STR.cur_meetings), getFromStorage(STR.users), getFromStorage(STR.all_other_meetings)];
 
 
         Promise.allSettled(promises).then(async (vals) => {
-            cur_meetings_data = vals[0].value || [];
+            all_cur_meetings = vals[0].value || [];
             meet_code = $('[data-meeting-code]').attr('data-meeting-code');
             user_database = vals[1].value || {};
             meeting_database = vals[2].value || {};
 
             let addNewMeeting = true;
-            for (let meet of cur_meetings_data) {
+            for (let meet of all_cur_meetings) {
                 if (meet.meeting_code == meet_code && !isExpired(meet)) {
                     addNewMeeting = false;
                     break;
                 }
             }
 
-            for (let i = 0; i < cur_meetings_data.length;) {
-                if (isExpired(cur_meetings_data[i])) {
+            for (let i = 0; i < all_cur_meetings.length;) {
+                if (isExpired(all_cur_meetings[i])) {
                     //Removes meet from current meetings list and puts it into long-term storage
-                    let removed_meet = cur_meetings_data.splice(i, i + 1)[0];
+                    let removed_meet = all_cur_meetings.splice(i, i + 1)[0];
                     if (meeting_database[removed_meet.category]) {
                         meeting_database[removed_meet.category].push(removed_meet);
                     } else {
@@ -63,7 +63,7 @@ if (window.location.pathname !== "/") {
             setInStorage(STR.all_other_meetings, meeting_database);
 
             if (addNewMeeting) {
-                cur_meetings_data.push(new Meeting());
+                all_cur_meetings.push(new Meeting());
             }
             for (let script of injected_scripts) {
                 await new Promise((re) => {
@@ -77,7 +77,7 @@ if (window.location.pathname !== "/") {
             }
             const event = new CustomEvent('send_data', {
                 detail: {
-                    meeting_data: cur_meetings_data,
+                    meeting_data: all_cur_meetings,//TODO:????
                     user_database: user_database
                 }
             });
@@ -86,7 +86,7 @@ if (window.location.pathname !== "/") {
                 for (var key in changes) {
                   var storageChange = changes[key];
                   if(key==STR.all_other_meetings){
-                      console.log("recieved udpate!",storageChange.newValue);
+                      console.log("recieved update!",storageChange.newValue);
                       meeting_database = storageChange.newValue;
                   }
                 }
@@ -97,7 +97,8 @@ if (window.location.pathname !== "/") {
                         case "get_meeting_data":
                             sendResponse({
                                 cur_meeting: cur_meeting,
-                                user_database: user_database
+                                user_database: user_database,
+                                all_cur_meetings: all_cur_meetings
                             });
                             // console.log("sending",cur_meeting,user_database);
                         
@@ -122,9 +123,9 @@ if (window.location.pathname !== "/") {
 
             let merged = false
             let defaultMeeting = -1;
-            for (let [i, meet] of cur_meetings_data.entries()) {
+            for (let [i, meet] of all_cur_meetings.entries()) {
                 if (meet.meeting_code == cur_meeting.meeting_code) {
-                    cur_meetings_data[i] = cur_meeting;
+                    all_cur_meetings[i] = cur_meeting;
                     merged = true;
                     break;
                 } else if (!meet.meeting_code) {
@@ -133,14 +134,14 @@ if (window.location.pathname !== "/") {
             }
 
             if (!merged) {
-                cur_meetings_data[defaultMeeting] = cur_meeting;
+                all_cur_meetings[defaultMeeting] = cur_meeting;
                 // cur_meetings_data.push(cur_meeting);
             }
 
             user_database = e.detail.user_database;
             // console.log(user_database);
             chrome.storage.local.set({
-                [STR.cur_meetings]: cur_meetings_data,
+                [STR.cur_meetings]: all_cur_meetings,
                 [STR.users]: user_database
             });
         });
