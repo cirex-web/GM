@@ -1,3 +1,3 @@
-# Clock it! - The Google Meet Participant Tracker
+# Clock it! - The Google Meet Participation Tracker
 Made by: Eric Xu
 
