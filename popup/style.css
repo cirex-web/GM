@@ -216,25 +216,25 @@ p{
 }
 
 .class-selector{
-    border: 2px solid transparent;
-    border-top-left-radius: 10px;
     text-align: left;
     color: black;
     font-size: 20px;
     position: relative;
-    box-sizing: content-box;
     transition: .3s all;
 }
-.class-selector.active{
-    border-color: black;
+.class-selector.hovered{
+    cursor: pointer;
 }
-.class-selector.active .select-symbol{
+.class-selector.hovered .select-symbol{
     opacity: 1;
 }
-.class-selector.active .selected-class p::after{
+.class-selector.hovered .selected-class p::after{
     opacity: 0;
 }
 .selected-class{
+    border: 2px dashed transparent;
+    box-sizing: border-box;
+
     background: transparent;
     font-weight: bold;
     padding: 10px;
@@ -242,9 +242,10 @@ p{
     display: flex;
     box-sizing: border-box;
 }
-.selected-class:hover{
-    cursor: pointer;
-}
+/* .class-selector.hovered .selected-class{
+    border-color: black;
+} */
+
 .selected-class p::after{
     left: 100%;
     content: attr(txt);
@@ -266,15 +267,18 @@ p{
     overflow: scroll;
     position: absolute;
     z-index: 2;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
     left: 0px;
-    border: 3px solid #000;
-    box-sizing: border-box;
-}
-.drop-menu.active{
-    transform: scaleY(1);
+    /* border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
 
+    border: 3px solid #000; */
+    box-sizing: border-box;
+    min-width: 200px;
+    overflow-wrap: anywhere;
+}
+.drop-menu.clicked{
+    transform: scaleY(1);
+    box-shadow: 0 10px 20px black;
 }
 .drop-menu-item{
     width: 100%;
@@ -283,6 +287,7 @@ p{
     transition: .3s background;
     cursor: pointer;
     position: relative;
+    border-bottom: solid 1px;
 }
 .drop-menu-item:hover{
     background: rgb(187, 186, 186);
@@ -295,10 +300,9 @@ p{
 }
 .element-container{
     position: relative;
-    border-radius: 10px;
-    margin: 10px;
-    border: 1px solid black;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.507);
     overflow: hidden;
+
     /* background: rgb(187, 187, 187); */
     background: white;
     transition: .2s all;
@@ -315,24 +319,32 @@ p{
 .element-container.removed{
     transform: scale(0);
 }
+.element-container.clicked{
+    box-shadow: 0 0 5px black;
+    z-index: 9;
+    margin: 10px 0;
+}
 .element-container.flex{
     justify-content: center;
     display: flex;
     align-items: center;
 }
+
 .meeting-top{
     display: flex;
     box-sizing: border-box;
     font-size: 20px;
     /* justify-content: center; */
     align-items: center;
-    transition: .3s all;
+    transition: .1s all;
 
 }
 
-.meeting-top:hover{
+.hovered .meeting-top{
     cursor: pointer;
     background: lightgray;
+    border-color: transparent;
+
 }
 .meeting-data{
     /* Move padding */
@@ -341,7 +353,7 @@ p{
     transition: .4s all;
     overflow: hidden;
 }
-.meeting-data.active{
+.clicked .meeting-data{
     max-height: 500px;
 
 }
@@ -392,15 +404,21 @@ img[ref]:hover{
     cursor: pointer;
     background: rgb(168, 168, 168);
 }
-.meeting-page-icon{
+.meeting-page-trash{
     height: 30px;
     padding: 0 5px;
-    transition: .2s all;
+    opacity: 0;
+    transition: .1s all;
+
 }
-.meeting-page-icon:hover{
+.hovered .meeting-page-trash{
+    opacity: 1;
+}
+.meeting-page-trash:hover{
     transform: scale(1.1);
 }
-.live .meeting-page-icon{
+
+.live .meeting-page-trash{
     display: none;
 }
 .graph{
@@ -413,12 +431,16 @@ img[ref]:hover{
 #meeting-data-container.active{
     opacity: 1;
 }
-.question{
+.meeting-page-question{
     margin-right: 5px;
     display: none;
     /* height: 1em; */
 }
+
 .live .question{
     display: block;
 }
 
+#meetings-container{
+    margin: 20px;
+}

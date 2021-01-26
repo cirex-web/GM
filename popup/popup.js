@@ -218,7 +218,7 @@ function createChart(x, y, label_name, container, template_name) {
     chart.render();
 }
 function setUpTabs() {
-    $(".selected-class").on("click", toggleMenu);
+    $(".selected-class").on("click", openMeetingDropdown);
     $(".tab-button").click(function (evt) {
         let btn = $(evt.currentTarget);
         let x = evt.pageX - btn.offset().left;
@@ -352,7 +352,7 @@ function addDropMenuListener() {
             updateMeetingStorage();
             let class_header = $(this).closest(".class-selector").find(".selected-class");
             class_header.find("p").html(chosen_category);
-            toggleMenu($list_item);
+            openMeetingDropdown($list_item);
         } else {
             if ($list_item.closest("[ready='true']").length == 0) {
                 $list_item.addClass('active');
@@ -383,7 +383,7 @@ function addCategory(cat) {
         return false;
     }
 }
-function toggleMenu(this1) {
+function openMeetingDropdown(this1) {
 
     let $menu = $(this).closest(".class-selector").find(".drop-menu");
     if ($menu.length == 0) {
@@ -393,9 +393,9 @@ function toggleMenu(this1) {
         return;
     }
 
-    $menu.toggleClass("active");
+    $menu.toggleClass("clicked");
 
-    if ($menu.hasClass("active")) {
+    if ($menu.hasClass("clicked")) {
 
         for (let cat of Object.keys(meeting_database)) {
             createListItem($menu, cat);
@@ -456,35 +456,48 @@ function setUpMeetingsPage() {
         $clone.find(".code").html(meeting.meeting_code);
         $clone.find(".element-container").attr('id', i);
         // $clone.find(".selected-class").on('click',);
-        $("[ref='H'].tab-container").append($clone);
+        $("#meetings-container").append($clone);
 
     }
-    $(".meeting-top").on('click', function (ev) {
-        if ($(ev.target).hasClass('trash')) {
+    $(".meeting-top").on('click mouseover mouseleave', function (ev) {
+
+        
+        let $target = $(ev.target);
+        let inside_dropdown = $target.closest(".drop-menu").length>0;
+        if ($target.hasClass('meeting-page-trash')) {
             return;
         }
-        let $element_container = $(this).closest('.element-container');
-        let $bottom = $element_container.find(".meeting-data");
-        let $drop_menu = $(this).find(".drop-menu");
-        let class_selector = $(ev.target).closest(".selected-class");
-        if (class_selector.length > 0 && $bottom.hasClass("active") && !$(ev.target).closest(".element-container").hasClass('live')) {
-
-            toggleMenu(class_selector);
-
-        } else if (!$drop_menu.hasClass('active')) {
-            $bottom.toggleClass("active");
-            if ($bottom.hasClass("active")) {
-                let $graph = $bottom.find(".graph-container");
-                // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
-                updateSpeakerData3(sorted_meetings[parseInt($element_container.attr('id'))], $graph, 10, true);
-
+        if(ev.type=="mouseover"){
+            if(!inside_dropdown){
+                $target.closest(".element-container").addClass('hovered');
+            }
+            
+        }else if(ev.type=="mouseleave"){
+            $target.closest(".element-container").removeClass('hovered');
+            
+            console.log(ev.target);
+        }else{
+            let $element_container = $(this).closest('.element-container');
+            let $bottom = $element_container.find(".meeting-data");
+            let $drop_menu = $(this).find(".drop-menu");
+            let $class_selector = $(ev.target).closest(".selected-class");
+            if ($class_selector.length > 0 && $element_container.hasClass("clicked") && !$(ev.target).closest(".element-container").hasClass('live')) {
+                //Only allows class selector dropdown to open if panel has been opened. (and it's not a 'live' panel)
+                openMeetingDropdown($class_selector);
+    
+            } else if (!$drop_menu.hasClass('clicked')) { //Prevents main content from closing if class dropdown is open
+                $element_container.toggleClass("clicked");
+                if ($element_container.hasClass("clicked")) {
+                    let $graph = $bottom.find(".graph-container");
+                    // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
+                    updateSpeakerData3(sorted_meetings[parseInt($element_container.attr('id'))], $graph, 10, true);
+    
+                }
             }
         }
 
-
-
     });
-    $(".trash").on('click', function () {
+    $(".meeting-page-trash").on('click', function () {
         let $container = $(this).closest(".element-container");
         let id = parseInt($container.attr("id"));
         let cat = sorted_meetings[id].category;
@@ -498,14 +511,14 @@ function setUpMeetingsPage() {
     });
     $(".class-selector").on('mouseover mouseleave', function (ev) {
         $this = $(this);
-        if (ev.type == "mouseover" && ($this.hasClass('main') || $this.closest(".element-container").find(".meeting-data").hasClass("active"))) {
+        if (ev.type == "mouseover" && ($this.hasClass('main') || $this.closest(".element-container").hasClass("clicked"))) {
             if(!$(ev.target).closest(".element-container").hasClass('live')){ 
-                $this.addClass("active");
+                $this.addClass("hovered");
 
             }
         } else {
-            if (!$this.find(".drop-menu").hasClass('active')) {
-                $this.removeClass("active");
+            if (!$this.find(".drop-menu").hasClass('hovered')) {
+                $this.removeClass("hovered");
 
             }
         }
