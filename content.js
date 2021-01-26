@@ -17,6 +17,7 @@ class Meeting {
 let debug = false;
 let injected_scripts = ["/external/jquery.js", "/external/arrive.js", "script.js"];
 let injected_styles = ["injected.css"];
+let all_cur_meetings, user_database, cur_meeting, meeting_database, meet_code;
 
 if (window.location.pathname !== "/") {
 
@@ -26,7 +27,6 @@ if (window.location.pathname !== "/") {
         let el = document.createElement("data_transfer");
         document.body.appendChild(el);
 
-        let all_cur_meetings, user_database, cur_meeting, meeting_database, meet_code;
 
         let promises = [getFromStorage(STR.cur_meetings), getFromStorage(STR.users), getFromStorage(STR.all_other_meetings)];
 
@@ -36,12 +36,12 @@ if (window.location.pathname !== "/") {
             all_cur_meetings = vals[0].value || [];
             user_database = vals[1].value || {};
             meeting_database = vals[2].value || {};
-
+            console.log(vals,all_cur_meetings);
             meet_code = $('[data-meeting-code]').attr('data-meeting-code');
 
             processExpiredMeetings();
             injectScriptsAndStuff();
-            addPopupListeners();
+            addPopupListeners(); 
 
         });
 
@@ -53,8 +53,9 @@ if (window.location.pathname !== "/") {
 }
 
 function processExpiredMeetings() {
-    let i = all_cur_meetings.length - 1;
     console.log(all_cur_meetings);
+
+    let i = all_cur_meetings.length - 1;
     while (i >= 0) {
         if (isExpired(all_cur_meetings[i])) {
             //Removes meet from current meetings list and puts it into long-term storage
@@ -77,6 +78,7 @@ function processExpiredMeetings() {
 function addScriptListener(){
     $("data_transfer")[0].addEventListener('merge_cur_meeting', async function (e) {
         cur_meeting = e.detail.meeting_data;
+        // console.log(cur_meeting);
         let merged = false
         let defaultMeeting = -1;
         for (let [i, meet] of all_cur_meetings.entries()) {

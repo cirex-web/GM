@@ -5,7 +5,7 @@ let STR = {
     all_cur_meetings: "cur_meetings"
 }
 //TODO: deal with page refresh... should refresh data or something
-
+//TODO: It's just dead
 let user_database, cur_meeting, meeting_database, all_cur_meetings;
 let timeGraph_obj;
 let page;
