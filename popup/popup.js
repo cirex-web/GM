@@ -524,7 +524,7 @@ function setUpMeetingsPage() {
         }
 
     });
-    tippy('.question',{
+    tippy('.meeting-page-question',{
         content: "This meeting is ongoing and has not yet been moved to permanent storage."
     })
 }
