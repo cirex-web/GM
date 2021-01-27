@@ -108,6 +108,16 @@ p{
         width: 100%;
     }
 }
+@keyframes show-menu{
+    0%{
+        transform: translate(0,-10px);
+        /* opacity: 0; */
+    }
+    100%{
+        transform: translate(0,10px);
+        /* opacity: 1; */
+    }
+}
 .tab-container{
     overflow: scroll;
     height: 450px;
@@ -221,6 +231,7 @@ p{
     font-size: 20px;
     position: relative;
     transition: .3s all;
+    max-width: 80%;
 }
 .class-selector.hovered{
     cursor: pointer;
@@ -245,7 +256,11 @@ p{
 /* .class-selector.hovered .selected-class{
     border-color: black;
 } */
-
+.no-wrap{
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .selected-class p::after{
     left: 100%;
     content: attr(txt);
@@ -268,6 +283,7 @@ p{
     position: absolute;
     z-index: 2;
     left: 0px;
+    opacity: 0;
     /* border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
 
@@ -276,9 +292,13 @@ p{
     min-width: 200px;
     overflow-wrap: anywhere;
 }
-.drop-menu.clicked{
-    transform: scaleY(1);
-    box-shadow: 0 10px 20px black;
+.class-selector.clicked .drop-menu{
+    animation: show-menu .1s linear;
+    animation-fill-mode:both;
+    opacity: 1;
+    /* transform: scaleY(1); */
+    
+    /* box-shadow: 0 10px 20px black; */
 }
 .drop-menu-item{
     width: 100%;
@@ -288,16 +308,33 @@ p{
     cursor: pointer;
     position: relative;
     border-bottom: solid 1px;
+    display: flex;
 }
 .drop-menu-item:hover{
     background: rgb(187, 186, 186);
 }
+.drop-menu-item-remove{
+    display: none;
+}
+.drop-menu-item:hover:not([type='add-new']) .drop-menu-item-remove{
+    display: block;
+    height: 15px;
+}
+/* For toggling the add class dropdown item */
 .drop-menu-input,.drop-menu-item.active .drop-menu-text{
     display: none;
 }
-.drop-menu-item.active .drop-menu-input, .drop-menu-text{
+.drop-menu-item.active .drop-menu-input{
     display: flex;
 }
+
+.drop-menu-text{
+    display: block;
+    flex-grow: 10;
+    /* height: 24px; */
+    font-size: 12px;
+}
+
 .element-container{
     position: relative;
     border-bottom: 1px solid rgba(128, 128, 128, 0.507);

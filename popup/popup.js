@@ -33,42 +33,42 @@ let graph_templates = {
                         let data_one = [];
                         let data_two_raw = [];
                         let data_two = [];
-                        for(let meet of meeting_database[cat]){
-                            let t =0;
-                            for(let [id,user] of Object.entries(meet.user_data)){
-                                if(!data_two_raw[user_database[id].NAME]){
-                                    data_two_raw[user_database[id].NAME]=[user.speaking_time,1];
-                                }else{
-                                    data_two_raw[user_database[id].NAME][0]+=user.speaking_time;
+                        for (let meet of meeting_database[cat]) {
+                            let t = 0;
+                            for (let [id, user] of Object.entries(meet.user_data)) {
+                                if (!data_two_raw[user_database[id].NAME]) {
+                                    data_two_raw[user_database[id].NAME] = [user.speaking_time, 1];
+                                } else {
+                                    data_two_raw[user_database[id].NAME][0] += user.speaking_time;
                                     data_two_raw[user_database[id].NAME][1]++;
 
                                 }
 
-                                
-                                t+=user.speaking_time;
+
+                                t += user.speaking_time;
                             }
 
 
-                            t/=60000;
-                            t = parseInt(t*100)/100;
-                            data_one.push([meet.lastUpdated,t]);
+                            t /= 60000;
+                            t = parseInt(t * 100) / 100;
+                            data_one.push([meet.lastUpdated, t]);
                         }
-                        for([key,val] of Object.entries(data_two_raw)){
-                            data_two.push([key,parseInt(val[0]/val[1]/60000*100)/100]);
+                        for ([key, val] of Object.entries(data_two_raw)) {
+                            data_two.push([key, parseInt(val[0] / val[1] / 60000 * 100) / 100]);
                         }
-                        data_two.sort((a,b)=>b[1]-a[1]);
-                        data_two = data_two.slice(1,7);
-                        console.log(data_one,data_two_raw);
-                        data_one.sort((a,b)=>a[0]-b[0]);
+                        data_two.sort((a, b) => b[1] - a[1]);
+                        data_two = data_two.slice(1, 7);
+                        console.log(data_one, data_two_raw);
+                        data_one.sort((a, b) => a[0] - b[0]);
                         $("#meeting-graph-one").html("");
                         $("#meeting-graph-two").html("");
 
-                        createChart(undefined,data_one,"Speaking Time",$("#meeting-graph-one")[0],"meeting_bar_one");
-                        createChart(arCol(data_two,0),arCol(data_two,1),"Minutes",$("#meeting-graph-two")[0],"meeting_bar_two");
+                        createChart(undefined, data_one, "Speaking Time", $("#meeting-graph-one")[0], "meeting_bar_one");
+                        createChart(arCol(data_two, 0), arCol(data_two, 1), "Minutes", $("#meeting-graph-two")[0], "meeting_bar_two");
 
-                        setTimeout(()=>{
-                            $("#meeting-data-container")[0].scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"});
-                        },100);
+                        setTimeout(() => {
+                            $("#meeting-data-container")[0].scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+                        }, 100);
                         $("#meeting-title span").html(cat)
                         $("#meeting-data-container").addClass("active");
                     }
@@ -119,7 +119,7 @@ let graph_templates = {
             }
         }
     },
-    meeting_bar_two:{
+    meeting_bar_two: {
         chart: {
             height: 200,
             width: "100%",
@@ -145,7 +145,7 @@ let graph_templates = {
                 horizontal: true,
             }
         }
-        
+
 
     }
 
@@ -190,7 +190,7 @@ window.onload = () => {
     getAllData();
     setUpTabs();
 
-    getVersion((version)=>{
+    getVersion((version) => {
         $("#version").html(version);
     });
 
@@ -207,7 +207,7 @@ function createChart(x, y, label_name, container, template_name) {
 
     });
     if (x) {
-        $.extend(options,{
+        $.extend(options, {
             xaxis: {
                 categories: x
             }
@@ -218,7 +218,7 @@ function createChart(x, y, label_name, container, template_name) {
     chart.render();
 }
 function setUpTabs() {
-    $(".selected-class").on("click", openMeetingDropdown);
+    $(".selected-class").on("click", toggleMeetingDropdown);
     $(".tab-button").click(function (evt) {
         let btn = $(evt.currentTarget);
         let x = evt.pageX - btn.offset().left;
@@ -228,23 +228,23 @@ function setUpTabs() {
             left: x,
             top: y
         });
-        setTimeout(()=>{
+        setTimeout(() => {
             ripple.remove();
-        },500);
+        }, 500);
         $("#tab-container-heading").html(header_names[page]);
         $(".tab-container").css("display", "none");
         $(".tab-icon").each((_, tab) => {
             tab.src = tab.src.replace("-active", "");
 
-            if ($(tab).closest("[ref='"+page+"']").length>0) {
+            if ($(tab).closest("[ref='" + page + "']").length > 0) {
                 tab.src = tab.src.replace(".", "-active.");
             }
         });
 
 
         $(".tab-container[ref=" + page + "]").css("display", "block");
-        if (page == "A" && !seen_analysis && meeting_database && Object.keys(meeting_database).length>0) {
-            $("[ref='A'] .full-disp").css('display','none');
+        if (page == "A" && !seen_analysis && meeting_database && Object.keys(meeting_database).length > 0) {
+            $("[ref='A'] .full-disp").css('display', 'none');
 
             renderMainCharts();
             seen_analysis = true;
@@ -288,7 +288,7 @@ function processStorageChanges(changes) {
 
         }
     }
-    if (cur_meet_update&&cur_meeting) {
+    if (cur_meet_update && cur_meeting) {
         $("[ref='C'] .full-disp").css('display', 'none');
         updateSpeakerData3(cur_meeting, $("#speaker-graph"));
     }
@@ -320,8 +320,8 @@ function getAllData() {
             user_database = await getFromStorage(STR.users);
             all_cur_meetings = await getFromStorage(STR.all_cur_meetings);
 
-            if (!rendered_meetings_page&&meeting_database) {
-                $("[ref='H'] .full-disp").css('display','none');
+            if (!rendered_meetings_page && meeting_database) {
+                $("[ref='H'] .full-disp").css('display', 'none');
                 setUpMeetingsPage();
                 addDropMenuListener();
                 rendered_meetings_page = true;
@@ -352,7 +352,7 @@ function addDropMenuListener() {
             updateMeetingStorage();
             let class_header = $(this).closest(".class-selector").find(".selected-class");
             class_header.find("p").html(chosen_category);
-            openMeetingDropdown($list_item);
+            toggleMeetingDropdown($list_item);
         } else {
             if ($list_item.closest("[ready='true']").length == 0) {
                 $list_item.addClass('active');
@@ -383,8 +383,8 @@ function addCategory(cat) {
         return false;
     }
 }
-function openMeetingDropdown(this1) {
-
+function toggleMeetingDropdown(this1) {
+    console.log("uhh");
     let $menu = $(this).closest(".class-selector").find(".drop-menu");
     if ($menu.length == 0) {
         $menu = this1.closest(".class-selector").find(".drop-menu");
@@ -392,10 +392,10 @@ function openMeetingDropdown(this1) {
     if ($menu.attr('moving')) {
         return;
     }
+    let $class_selector = $menu.closest(".class-selector")
+    $class_selector.toggleClass("clicked");
 
-    $menu.toggleClass("clicked");
-
-    if ($menu.hasClass("clicked")) {
+    if ($class_selector.hasClass("clicked")) {
 
         for (let cat of Object.keys(meeting_database)) {
             createListItem($menu, cat);
@@ -437,8 +437,8 @@ function setUpMeetingsPage() {
             sorted_meetings.push(meeting);
         }
     }
-    for(let meeting of all_cur_meetings){
-        sorted_meetings.push($.extend(meeting,{
+    for (let meeting of all_cur_meetings) {
+        sorted_meetings.push($.extend(meeting, {
             cur: true
         }));
     }
@@ -448,8 +448,8 @@ function setUpMeetingsPage() {
 
         let clone = $("#meeting-data")[0].content.cloneNode(true);
         let $clone = $(clone);
-        if(meeting.cur){
-            $clone.find(".element-container").addClass("live");   
+        if (meeting.cur) {
+            $clone.find(".element-container").addClass("live");
         }
         $clone.find(".meeting-top .class-name").html(meeting.category);
         $clone.find(".date").html(generateDate(meeting.lastUpdated));
@@ -461,38 +461,50 @@ function setUpMeetingsPage() {
     }
     $(".meeting-top").on('click mouseover mouseleave', function (ev) {
 
-        
+
         let $target = $(ev.target);
-        let inside_dropdown = $target.closest(".drop-menu").length>0;
+        let inside_dropdown = $target.closest(".drop-menu").length > 0;
         if ($target.hasClass('meeting-page-trash')) {
             return;
         }
-        if(ev.type=="mouseover"){
-            if(!inside_dropdown){
+        if (ev.type == "mouseover") {
+            if (!inside_dropdown) {
                 $target.closest(".element-container").addClass('hovered');
             }
-            
-        }else if(ev.type=="mouseleave"){
+
+        } else if (ev.type == "mouseleave") {
             $target.closest(".element-container").removeClass('hovered');
-            
-            console.log(ev.target);
-        }else{
+        } else {
             let $element_container = $(this).closest('.element-container');
             let $bottom = $element_container.find(".meeting-data");
-            let $drop_menu = $(this).find(".drop-menu");
-            let $class_selector = $(ev.target).closest(".selected-class");
+            let $drop_menu = $target.closest(".drop-menu");
+
+            let $class_selector = $(ev.target).closest(".class-selector");//changed from inside thing
             if ($class_selector.length > 0 && $element_container.hasClass("clicked") && !$(ev.target).closest(".element-container").hasClass('live')) {
+                //first part checks if user has clicked inside of class_selector
                 //Only allows class selector dropdown to open if panel has been opened. (and it's not a 'live' panel)
-                openMeetingDropdown($class_selector);
-    
-            } else if (!$drop_menu.hasClass('clicked')) { //Prevents main content from closing if class dropdown is open
-                $element_container.toggleClass("clicked");
-                if ($element_container.hasClass("clicked")) {
-                    let $graph = $bottom.find(".graph-container");
-                    // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
-                    updateSpeakerData3(sorted_meetings[parseInt($element_container.attr('id'))], $graph, 10, true);
-    
+                if($drop_menu.length==0){
+                    console.log($(this));
+                    toggleMeetingDropdown($class_selector);
+
                 }
+
+
+
+            } else { //user clicked outside of class_selector
+
+                $class_selector = $element_container.find(".class-selector");
+                if (!$class_selector.hasClass('clicked')) { //Prevents main content from closing if class dropdown is open
+
+                    $element_container.toggleClass("clicked");
+                    if ($element_container.hasClass("clicked")) {
+                        let $graph = $bottom.find(".graph-container");
+                        // console.log(sorted_meetings[parseInt(graph.attr('id'))]);
+                        updateSpeakerData3(sorted_meetings[parseInt($element_container.attr('id'))], $graph, 10, true);
+
+                    }
+                }
+
             }
         }
 
@@ -512,7 +524,7 @@ function setUpMeetingsPage() {
     $(".class-selector").on('mouseover mouseleave', function (ev) {
         $this = $(this);
         if (ev.type == "mouseover" && ($this.hasClass('main') || $this.closest(".element-container").hasClass("clicked"))) {
-            if(!$(ev.target).closest(".element-container").hasClass('live')){ 
+            if (!$(ev.target).closest(".element-container").hasClass('live')) {
                 $this.addClass("hovered");
 
             }
@@ -524,7 +536,7 @@ function setUpMeetingsPage() {
         }
 
     });
-    tippy('.meeting-page-question',{
+    tippy('.meeting-page-question', {
         content: "This meeting is ongoing and has not yet been moved to permanent storage."
     })
 }
