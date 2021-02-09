@@ -17,15 +17,15 @@ Analyze speaking data by class and view trends over time.
 
 Difficulty
 ===
-    To make the features you saw possible, I examined Google Meet's obfuscated source code (using "inspect element" and a whole lot of breakpoints) and examined how the UI elements were generated and updated. Using function injection along with accessing DOM elements, I could obtain this internal data and generate the speaking times. This could've only been done with a top-level script, which complicated data passing as well. 
+To make the features you saw possible, I examined Google Meet's obfuscated source code (using "inspect element" and a whole lot of breakpoints) and examined how the UI elements were generated and updated. Using function injection along with accessing DOM elements, I could obtain this internal data and generate the speaking times. This could've only been done with a top-level script, which complicated data passing as well. 
 
 Originality
 ===
-	The main reason I undertook this project was that I was curious about how much my classmates participated in class. Thanks to online learning, that metric now became speaking time, which was quantifiable. However, there was no way of getting speaking data in Google Meet. There was no built in-feature, no Chrome Extensions, and no indication that anyone was even trying to build it. This extension may very well be the first of its kind.
+The main reason I undertook this project was that I was curious about how much my classmates participated in class. Thanks to online learning, that metric now became speaking time, which was quantifiable. However, there was no way of getting speaking data in Google Meet. There was no built in-feature, no Chrome Extensions, and no indication that anyone was even trying to build it. This extension may very well be the first of its kind.
 
 Polish
 ===
-	For the UI, I went for a minimalist theme with a color palette of primarily black and white (I just tried to keep it as clean as possible.)
+For the UI, I went for a minimalist theme with a color palette of primarily black and white (I just tried to keep it as clean as possible.)
 
 Theme
 ===
