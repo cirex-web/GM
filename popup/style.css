@@ -111,11 +111,11 @@ p{
 @keyframes show-menu{
     0%{
         transform: translate(0,-10px);
-        /* opacity: 0; */
+        opacity: 0;
     }
     100%{
         transform: translate(0,10px);
-        /* opacity: 1; */
+        opacity: 1;
     }
 }
 .tab-container{
@@ -182,6 +182,8 @@ p{
     position: relative;
     border: 2px solid black;
     box-sizing: border-box;
+    background-color: black;
+    overflow: hidden;
 }
 .bar.active .bar-bar{
     border-color: green;
@@ -190,7 +192,7 @@ p{
 .bar.active .bar-img{
     border-color: green;
 }
-.bar-bar[val]::after{
+.bar-bar::after{
     padding: 0 10px 0 35px;
     left: 0px;
     top: 50%;
@@ -200,7 +202,7 @@ p{
     content: attr(val);
     position: absolute;
     right: 0px;
-    color: black;
+    color: white;
     font-size: 20px;
     white-space: nowrap;
     box-sizing: border-box;
@@ -212,6 +214,16 @@ p{
     position: absolute;
     top: 0;
     left: 0;
+    z-index: 10;
+}
+.bar-txt-overflow{
+    font-size: 20px;
+    position: absolute;
+    top: 50%;
+    left: 37px;
+    transform: translate(0, -50%);
+    z-index: -1;
+    white-space: nowrap;
 }
 .bar-bar-container{
     /* flex-grow: 1; */
@@ -230,7 +242,7 @@ p{
     color: black;
     font-size: 20px;
     position: relative;
-    transition: .3s all;
+    /* transition: .3s all; */
     max-width: 80%;
 }
 .class-selector.hovered{
@@ -241,6 +253,9 @@ p{
 }
 .class-selector.hovered .selected-class p::after{
     opacity: 0;
+}
+.class-selector.clicked .select-symbol{
+    transform: rotate(180deg);
 }
 .selected-class{
     border: 2px dashed transparent;
@@ -275,13 +290,15 @@ p{
     /* border-top: 2px solid black; */
     background: white;
     max-height: 200px;
-    transform: scaleY(0);
+    /* transform: scaleY(0); */
+    transform: translate(0,0px);
     transform-origin: top;
     width: 100%;
     transition: .4s all;
-    overflow: scroll;
+    overflow: auto;
     position: absolute;
-    z-index: 2;
+    z-index: 999; 
+    /* idk if I don't do this the user can hover the stuff underneath it */
     left: 0px;
     opacity: 0;
     /* border-bottom-left-radius: 10px;
@@ -291,15 +308,23 @@ p{
     box-sizing: border-box;
     min-width: 200px;
     overflow-wrap: anywhere;
+    /* border: 1px solid black; */
 }
 .class-selector.clicked .drop-menu{
-    animation: show-menu .1s linear;
-    animation-fill-mode:both;
-    opacity: 1;
+    /* animation: show-menu .1s linear; */
+    /* animation-fill-mode:forwards; */
+    transform: translate(0,10px);
+
     /* transform: scaleY(1); */
-    
-    /* box-shadow: 0 10px 20px black; */
+    opacity: 1;
+    box-shadow: 0 0 5px black;
 }
+/* .class-selector.un-clicked .drop-menu{
+    animation: show-menu .1s linear;
+    animation-direction: reverse;
+    animation-fill-mode:backwards;
+
+} */
 .drop-menu-item{
     width: 100%;
     box-sizing: border-box;
@@ -310,15 +335,15 @@ p{
     border-bottom: solid 1px;
     display: flex;
 }
-.drop-menu-item:hover{
+/* .drop-menu-item:hover{
     background: rgb(187, 186, 186);
-}
+} */
 .drop-menu-item-remove{
     display: none;
 }
 .drop-menu-item:hover:not([type='add-new']) .drop-menu-item-remove{
     display: block;
-    height: 15px;
+    height: .8em;
 }
 /* For toggling the add class dropdown item */
 .drop-menu-input,.drop-menu-item.active .drop-menu-text{
@@ -332,7 +357,7 @@ p{
     display: block;
     flex-grow: 10;
     /* height: 24px; */
-    font-size: 12px;
+    font-size: .8em;
 }
 
 .element-container{

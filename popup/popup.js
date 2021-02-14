@@ -617,12 +617,14 @@ function displaySpeakerData(users, chart, max, max_items) {
         }
         let entire_bar = chart.find("#" + user.ID_parsed);
         let bar = chart.find("#" + user.ID_parsed + " .bar-bar");
-
+        let bar_container = entire_bar.find(".bar-bar-container");
         entire_bar.css("top", pos + "px");
         entire_bar.css("height", height + "px");
 
         bar.css("width", (user.DATA.speaking_time / max * 100) + "%");
-        bar.attr('val', user_database[user.ID].NAME);
+        bar.attr('val',user_database[user.ID].NAME);
+        bar_container.find(".bar-txt-overflow").html(user_database[user.ID].NAME);
+        // bar_container.attr('style', '--val: '+ user_database[user.ID].NAME+";");
 
         let str = msToString(user.DATA.speaking_time);
         if (bar[0]._tippy) {
