@@ -13,6 +13,7 @@
   <script src="/external/tippy-core.js"></script>
   <script src="/external/tippy.js"></script>
   <script src="/external/apex.js"></script>
+  <script src="/external/countUp.js"></script>
 
   <link rel="stylesheet" href="/external/scale.css"/>
   <script src="popup.js"></script>
@@ -78,7 +79,15 @@
   <div class="tab-container" ref="H">
 
     <div class="full-disp">No meetings saved</div>
-    <div id="meetings-container"></div>
+    <div class="meetings-general-data">
+      <div class="data-square"><div id="meeting-number">0</div><span class="subtitle">Tracked Meetings</span></div>
+
+      <div class="data-square"><div id="meeting-people">0</div><span class="subtitle">Tracked People</span></div>
+
+    </div>
+    <div id="meetings-container">
+
+    </div>
   </div>
   <div class="tab-container" ref="A">
     <div class="element-container">

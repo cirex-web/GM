@@ -9,7 +9,7 @@ let STR = {
 let user_database, cur_meeting, meeting_database, all_cur_meetings;
 let timeGraph_obj;
 let page;
-let seen_analysis = false, rendered_meetings_page = false;
+let seen_analysis = false, rendered_meetings_page = false, seen_history = false;
 let timer_graph_data = [];
 let sorted_meetings = [];
 
@@ -248,6 +248,20 @@ function setUpTabs() {
 
             renderMainCharts();
             seen_analysis = true;
+        }else if(page=='H' && !seen_history){
+            seen_history = true;
+            let options = {  
+                useEasing: true,
+                  separator: ',',
+                  decimal: '.',
+                  prefix: '',
+                  suffix: ''
+            };
+            console.log('fsd');
+            new CountUp('meeting-number',0, sorted_meetings.length).start();
+            new CountUp('meeting-people',0, Object.keys(user_database).length).start();
+
+        
         }
         $(this).addClass("selected");
     });
@@ -443,6 +457,7 @@ function setUpMeetingsPage() {
         }));
     }
     sorted_meetings.sort((a, b) => b.lastUpdated - a.lastUpdated);
+
 
     for (let [i, meeting] of sorted_meetings.entries()) {
 
