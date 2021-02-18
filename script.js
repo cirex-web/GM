@@ -1,22 +1,3 @@
-
-/*
-
-
-TODO: monitor the side panel for new user joining and initialize in both user and meeting
-TODO: Update user database (in storage) every time it changes
-
-
-*/
-
-
-// Later
-//TODO: Aria labels don't work in other languages
-// TODO: Add loading screen
-
-// Very later
-//TODO: Change storage to sync
-
-
 // Relevant GM elements 
 let ELEMENTS = {
     SHOW_USERS: {
@@ -132,6 +113,8 @@ let utilFunctions = {
     REMOVE_CLASS: {
         snippet: "a.classList.remove(b)",
         func: (element, class_name) => {
+            // console.log("remove class good");
+
             try {
                 if (matches(element, ELEMENTS.SIDE_BAR) && class_name == CLASS_NAMES.SIDEBAR_OPEN) {
                     local.clicked_sidebar = false;
@@ -153,6 +136,7 @@ let utilFunctions = {
     ADD_CLASS: {
         snippet: "a.classList.add(b)",
         func: (element, class_name) => {
+            // console.log("add class good");
             try {
 
                 if (matches(element, ELEMENTS.SIDE_BAR) && class_name == CLASS_NAMES.SIDEBAR_OPEN) {
@@ -160,12 +144,14 @@ let utilFunctions = {
 
                     if (!local.sidebar_init.phase_one) {
                         local.sidebar_init.phase_one = true;
+                        console.log("init pahse one");
                     } else {
-
+                        console.log("clicked");
                         local.clicked_sidebar = true;
 
                     }
                 } else if (matches(element, ELEMENTS.VOLUME_OUTPUT) || matches(element, ELEMENTS.VOLUME_CONTAINER)) {
+                    // console.log("attempting to track spekaing",element);
                     updateSpeakerData(element, class_name);
                 }
                 return true;
@@ -183,7 +169,7 @@ let cur_meeting, user_database;
 for (n of Object.keys(ELEMENTS)) {
     ELEMENTS[n] = new El(ELEMENTS[n]);
 }
-injectFunctions();
+injectFunctionsV2();
 listenForUpdates();
 
 document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
@@ -276,39 +262,39 @@ async function run() {
     }
 
 }
-function listenForUpdates(){
+function listenForUpdates() {
     $("data_transfer")[0].addEventListener('send_data', function (e) {
         cur_meeting = e.detail.meeting_data;
         user_database = e.detail.user_database;
-    
-    
+
+
         console.log("meeting data and user database: ", cur_meeting, user_database);
         try {
             let found = false;
-    
+
             for (let meet of cur_meeting) {
                 if (meet.meeting_code === meet_code) {
-    
+
                     cur_meeting = meet;
                     found = true;
-    
+
                     break;
                 }
             }
             if (!found) {
                 cur_meeting = cur_meeting[cur_meeting.length - 1];
                 cur_meeting.meeting_code = meet_code;
-    
+
             }
             console.log("cur_meeting: ", cur_meeting);
-    
-    
+
+
         } catch (e) {
             console.log(e);
         }
-    
+
     });
-    $("data_transfer")[0].addEventListener('cur_meeting_update', function (e){
+    $("data_transfer")[0].addEventListener('cur_meeting_update', function (e) {
         cur_meeting.category = e.detail.meeting_category;
         updateStorage();
     });
@@ -328,13 +314,14 @@ function setUpMeetingData() {
 function init_sidebar() { //this bit of code just sets up the sidebar for data-gathering. 
     return new Promise((re) => {
         let side = ELEMENTS.SIDE_BAR.getEl();
-        side.arrive(ELEMENTS.CLOSE.formQuery(), { existing: true, onceOnly: true }, () => {
+        side.arrive(ELEMENTS.CLOSE.formQuery(), { existing: true, onceOnly: true }, async () => {
+            await wait(1000);
             const loop = setInterval(() => {
                 ELEMENTS.CLOSE.getEl().click();
                 if (local.sidebar_init.phase_two) {
                     $("body").on('click', 'div', () => {
                         setTimeout(() => {
-                            if (ELEMENTS.LIST_ITEM.getEl().width()>1 && local.clicked_sidebar) {
+                            if (ELEMENTS.LIST_ITEM.getEl().width() > 1 && local.clicked_sidebar) {
 
                                 ELEMENTS.LIST_ITEM.getEl().css('cssText', 'opacity: 1 !important;height: 56px !important;');
 
@@ -434,21 +421,41 @@ function inject(before, fn) {
 
     }
 }
+function injectFunctionsV2() {
+    for (var key in window.default_MeetingsUi) {
+        if (window.default_MeetingsUi.hasOwnProperty(key)) {
+            let original_func = window.default_MeetingsUi[key];
+            if (!original_func || typeof original_func != "function") continue;
+            for (injectObj of Object.values(utilFunctions)) {
+
+                if (Function.prototype.toString.call(original_func).includes(injectObj.snippet)) {
+                    f = true;
+                    console.log(key);
+                    window.default_MeetingsUi[key] = inject(injectObj.func, original_func);
+                }
+            }
+        }
+    }
+    console.log(f?"Injection success!":"Injection failure");
+}
 function injectFunctions() {
+    let f = false;
     for ([name, original_func] of Object.entries(window.default_MeetingsUi)) {
         if (!original_func || typeof original_func != "function") continue;
         for (injectObj of Object.values(utilFunctions)) {
 
             if (Function.prototype.toString.call(original_func).includes(injectObj.snippet)) {
+                f = true;
                 console.log(name);
                 window.default_MeetingsUi[name] = inject(injectObj.func, original_func);
             }
         }
     }
+    // if (!f) console.log("houston we got a problem");
 }
 
 function updateSpeakerData(speaker_el, class_added) {
-    if (!local.sidebar_init.phase_two) return;
+    if (!local.sidebar_init.phase_one) return;
     let list_container = speaker_el.closest(ELEMENTS.LIST_ITEM.formQuery());
     cur_meeting.lastUpdated = + new Date();
     if (list_container != null) {
@@ -459,7 +466,7 @@ function updateSpeakerData(speaker_el, class_added) {
 
         let user = cur_meeting.user_data[getUserImage(list_container)];
 
-        if (class_added === CLASS_NAMES.USER_MUTED) { //GM doesn't update inner sound class if user mutes; it adds the class USER_MUTED to the parent.
+        if (class_added === CLASS_NAMES.USER_MUTED) { //GM doesn't update inner sound class if user mutes; it just adds the class USER_MUTED to the parent.
             stopTrackingUserTime(user, list_container);
         } else if (!speaker_el.parentElement.classList.contains(CLASS_NAMES.USER_MUTED)
             && !speaker_el.classList.contains(CLASS_NAMES.USER_MUTED)) { //Devs too lazy to not update sound class if muted; need to manually check.
