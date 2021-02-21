@@ -26,55 +26,10 @@ let graph_templates = {
                 show: false
             },
             events: {
-                click: function (_, _, config) {
-                    let i = config.dataPointIndex;
-                    if (i != -1) {
-                        let cat = main_bar_data[i][0];
-                        let data_one = [];
-                        let data_two_raw = [];
-                        let data_two = [];
-                        for (let meet of meeting_database[cat]) {
-                            let t = 0;
-                            for (let [id, user] of Object.entries(meet.user_data)) {
-                                if (!data_two_raw[user_database[id].NAME]) {
-                                    data_two_raw[user_database[id].NAME] = [user.speaking_time, 1];
-                                } else {
-                                    data_two_raw[user_database[id].NAME][0] += user.speaking_time;
-                                    data_two_raw[user_database[id].NAME][1]++;
-
-                                }
+                click: renderSubCharts
+            }
 
 
-                                t += user.speaking_time;
-                            }
-
-
-                            t /= 60000;
-                            t = parseInt(t * 100) / 100;
-                            data_one.push([meet.lastUpdated, t]);
-                        }
-                        for ([key, val] of Object.entries(data_two_raw)) {
-                            data_two.push([key, parseInt(val[0] / val[1] / 60000 * 100) / 100]);
-                        }
-                        data_two.sort((a, b) => b[1] - a[1]);
-                        data_two = data_two.slice(1, 7);
-                        console.log(data_one, data_two_raw);
-                        data_one.sort((a, b) => a[0] - b[0]);
-                        $("#meeting-graph-one").html("");
-                        $("#meeting-graph-two").html("");
-
-                        createChart(undefined, data_one, "Speaking Time", $("#meeting-graph-one")[0], "meeting_bar_one");
-                        createChart(arCol(data_two, 0), arCol(data_two, 1), "Minutes", $("#meeting-graph-two")[0], "meeting_bar_two");
-
-                        setTimeout(() => {
-                            $("#meeting-data-container")[0].scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
-                        }, 100);
-                        $("#meeting-title span").html(cat)
-                        $("#meeting-data-container").addClass("active");
-                    }
-
-                }
-            },
         },
         dataLabels: {
             enabled: false,
@@ -147,6 +102,26 @@ let graph_templates = {
         }
 
 
+    },
+    history_meetings_pie: {
+        chart: {
+            width: 380,
+            type: 'pie',
+        },
+        dataLabels: {
+            enabled: false
+        },
+        responsive: [{
+            breakpoint: 480,
+            options: {
+                chart: {
+                    width: 200
+                },
+                legend: {
+                    show: false
+                }
+            }
+        }]
     }
 
 }
@@ -196,9 +171,19 @@ window.onload = () => {
 
     chrome.storage.onChanged.addListener(processStorageChanges);
 }
-function createChart(x, y, label_name, container, template_name) {
+function createPieChart(x, y, container, template) {
+    let options = $.extend({}, template, {
+        series: y,
+        labels: x
+    });
+    console.log(options);
+    var chart = new ApexCharts(container, options);
 
-    let options = $.extend({}, graph_templates[template_name], {
+    chart.render();
+}
+function createChart(x, y, label_name, container, template) {
+
+    let options = $.extend({}, template, {
         series: [{
             name: label_name,
             data: y
@@ -213,6 +198,7 @@ function createChart(x, y, label_name, container, template_name) {
             }
         });
     }
+    console.log(options);
     var chart = new ApexCharts(container, options);
 
     chart.render();
@@ -248,20 +234,30 @@ function setUpTabs() {
 
             renderMainCharts();
             seen_analysis = true;
-        }else if(page=='H' && !seen_history){
+        } else if (page == 'H' && !seen_history) {
             seen_history = true;
-            let options = {  
+            let options = {
                 useEasing: true,
-                  separator: ',',
-                  decimal: '.',
-                  prefix: '',
-                  suffix: ''
+                separator: ',',
+                decimal: '.',
+                prefix: '',
+                suffix: ''
             };
-            console.log('fsd');
-            new CountUp('meeting-number',0, sorted_meetings.length).start();
-            new CountUp('meeting-people',0, Object.keys(user_database).length).start();
+            new CountUp('meeting-number', 0, sorted_meetings.length).start();
+            // new CountUp('meeting-people', 0, Object.keys(user_database).length).start();
+            let cats = [];
+            let freq = [];
+            for (let i = 0; i < sorted_meetings.length; i++) {
+                let cat = sorted_meetings[i].category;
+                if (!cats.includes(cat)) {
+                    cats.push(cat);
+                    freq.push(0);
+                }
+                freq[cats.indexOf(cat)]++;
 
-        
+            }
+            createPieChart(cats, freq, $("#meeting-cats")[0], graph_templates.history_meetings_pie);
+
         }
         $(this).addClass("selected");
     });
@@ -285,7 +281,7 @@ function renderMainCharts() {
     }
     main_bar_data.sort((a, b) => b[1] - a[1]);
     console.log(main_bar_data);
-    createChart(arCol(main_bar_data, 0), arCol(main_bar_data, 1), "Minutes", $("#main-bar")[0], "main_bar");
+    createChart(arCol(main_bar_data, 0), arCol(main_bar_data, 1), "Minutes", $("#main-bar")[0], graph_templates.main_bar);
 }
 function processStorageChanges(changes) {
     let cur_meet_update = false;
@@ -458,20 +454,14 @@ function setUpMeetingsPage() {
     }
     sorted_meetings.sort((a, b) => b.lastUpdated - a.lastUpdated);
 
-
+    let date = "";
     for (let [i, meeting] of sorted_meetings.entries()) {
-
-        let clone = $("#meeting-data")[0].content.cloneNode(true);
-        let $clone = $(clone);
-        if (meeting.cur) {
-            $clone.find(".element-container").addClass("live");
+        let newDate = generateDate(meeting.start_time || meeting.lastUpdated);
+        if (date != newDate) {
+            date = newDate;
+            createMeetingDivider(date);
         }
-        $clone.find(".meeting-top .class-name").html(meeting.category);
-        $clone.find(".date").html(generateDate(meeting.lastUpdated));
-        $clone.find(".code").html(meeting.meeting_code);
-        $clone.find(".element-container").attr('id', i);
-        // $clone.find(".selected-class").on('click',);
-        $("#meetings-container").append($clone);
+        createMeetingEl(meeting,i);
 
     }
     $(".meeting-top").on('click mouseover mouseleave', function (ev) {
@@ -498,7 +488,7 @@ function setUpMeetingsPage() {
             if ($class_selector.length > 0 && $element_container.hasClass("clicked") && !$(ev.target).closest(".element-container").hasClass('live')) {
                 //first part checks if user has clicked inside of class_selector
                 //Only allows class selector dropdown to open if panel has been opened. (and it's not a 'live' panel)
-                if($drop_menu.length==0){
+                if ($drop_menu.length == 0) {
                     console.log($(this));
                     toggleMeetingDropdown($class_selector);
 
@@ -555,7 +545,29 @@ function setUpMeetingsPage() {
         content: "This meeting is ongoing and has not yet been moved to permanent storage."
     })
 }
+function createMeetingDivider(date){
+    let $clone = $($("#meeting-date-divider")[0].content.cloneNode(true));
+    $clone.find(".date").html(date);
+    $("#meetings-container").append($clone);
+
+}
+function createMeetingEl(meeting,i) {
+    let clone = $("#meeting-data")[0].content.cloneNode(true);
+    let $clone = $(clone);
+    if (meeting.cur) {
+        $clone.find(".element-container").addClass("live");
+    }
+    $clone.find(".meeting-top .class-name").html(meeting.category);
+    $clone.find(".date").html(generateFullDate(meeting.lastUpdated));
+    $clone.find(".code").html(meeting.meeting_code);
+    $clone.find(".element-container").attr('id', i);
+    // $clone.find(".selected-class").on('click',);
+    $("#meetings-container").append($clone);
+}
 function generateDate(mm) {
+    return new Date(mm).toLocaleDateString();
+}
+function generateFullDate(mm) {
     let date = new Date(mm);
     return date.toLocaleString("en-US", { timeZoneName: "short" });
 }
@@ -637,7 +649,7 @@ function displaySpeakerData(users, chart, max, max_items) {
         entire_bar.css("height", height + "px");
 
         bar.css("width", (user.DATA.speaking_time / max * 100) + "%");
-        bar.attr('val',user_database[user.ID].NAME);
+        bar.attr('val', user_database[user.ID].NAME);
         bar_container.find(".bar-txt-overflow").html(user_database[user.ID].NAME);
         // bar_container.attr('style', '--val: '+ user_database[user.ID].NAME+";");
 
@@ -704,9 +716,54 @@ function getVersion(callback) {
     xmlhttp.send(null);
 }
 
+function renderSubCharts(_, _, config) {
+    let i = config.dataPointIndex;
+    if (i != -1) {
+        let cat = main_bar_data[i][0];
+        let data_one = [];
+        let data_two_raw = [];
+        let data_two = [];
+        for (let meet of meeting_database[cat]) {
+            let t = 0;
+            for (let [id, user] of Object.entries(meet.user_data)) {
+                if (!data_two_raw[user_database[id].NAME]) {
+                    data_two_raw[user_database[id].NAME] = [user.speaking_time, 1];
+                } else {
+                    data_two_raw[user_database[id].NAME][0] += user.speaking_time;
+                    data_two_raw[user_database[id].NAME][1]++;
+
+                }
 
 
+                t += user.speaking_time;
+            }
 
+
+            t /= 60000;
+            t = parseInt(t * 100) / 100;
+            data_one.push([meet.lastUpdated, t]);
+        }
+        for ([key, val] of Object.entries(data_two_raw)) {
+            data_two.push([key, parseInt(val[0] / val[1] / 60000 * 100) / 100]);
+        }
+        data_two.sort((a, b) => b[1] - a[1]);
+        data_two = data_two.slice(1, 7);
+        console.log(data_one, data_two_raw);
+        data_one.sort((a, b) => a[0] - b[0]);
+        $("#meeting-graph-one").html("");
+        $("#meeting-graph-two").html("");
+
+        createChart(undefined, data_one, "Speaking Time", $("#meeting-graph-one")[0], graph_templates.meeting_bar_one);
+        createChart(arCol(data_two, 0), arCol(data_two, 1), "Minutes", $("#meeting-graph-two")[0], graph_templates.meeting_bar_two);
+
+        setTimeout(() => {
+            $("#meeting-data-container")[0].scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+        }, 100);
+        $("#meeting-title span").html(cat)
+        $("#meeting-data-container").addClass("active");
+    }
+
+}
 
 
 
