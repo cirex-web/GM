@@ -4,20 +4,22 @@ let STR = {
     all_other_meetings: "other_meetings",
     all_cur_meetings: "cur_meetings"
 }
-//TODO: deal with page refresh... should refresh data or something
-//TODO: It's just dead
 let user_database, cur_meeting, meeting_database, all_cur_meetings;
-let timeGraph_obj;
 let page;
 let seen_analysis = false, rendered_meetings_page = false, seen_history = false;
-let timer_graph_data = [];
-let sorted_meetings = [];
 
+let sorted_meetings = [];
+let main_bar_data = [];
+let meeting_pie_cats = [];
 let header_names = {
     'C': "Current Meeting",
     "H": "Meeting History",
     "A": "Analysis"
 }
+let consts = {
+    UNCAT: "UNCATEGORIZED"
+}
+let current_meeting_user_data = [];
 let graph_templates = {
     main_bar: {
         chart: {
@@ -107,6 +109,9 @@ let graph_templates = {
         chart: {
             width: 380,
             type: 'pie',
+            events: {
+                dataPointSelection: filterMeetings
+            }
         },
         dataLabels: {
             enabled: false
@@ -125,7 +130,6 @@ let graph_templates = {
     }
 
 }
-let main_bar_data = [];
 
 
 const fac = new FastAverageColor();
@@ -245,23 +249,22 @@ function setUpTabs() {
             };
             new CountUp('meeting-number', 0, sorted_meetings.length).start();
             // new CountUp('meeting-people', 0, Object.keys(user_database).length).start();
-            let cats = [];
             let freq = [];
             for (let i = 0; i < sorted_meetings.length; i++) {
                 let cat = sorted_meetings[i].category;
-                if (!cats.includes(cat)) {
-                    cats.push(cat);
+                if (!meeting_pie_cats.includes(cat)) {
+                    meeting_pie_cats.push(cat);
                     freq.push(0);
                 }
-                freq[cats.indexOf(cat)]++;
+                freq[meeting_pie_cats.indexOf(cat)]++;
 
             }
-            createPieChart(cats, freq, $("#meeting-cats")[0], graph_templates.history_meetings_pie);
+            createPieChart(meeting_pie_cats, freq, $("#meeting-cats")[0], graph_templates.history_meetings_pie);
 
         }
         $(this).addClass("selected");
     });
-    $("[ref='C']").click();
+    $(".tab-container[ref=C]").css("display", "block");
 }
 function renderMainCharts() {
     for (let cat of Object.keys(meeting_database)) {
@@ -342,7 +345,11 @@ function getAllData() {
 function addDropMenuListener() {
     $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
         let $list_item = $(ev.target).closest('.drop-menu-item');
-        if ($list_item.closest("[type='add-new']").length == 0) {
+        if($(ev.target).closest(".drop-menu-item-remove").length>0){
+
+            removeCategory($list_item.find(".drop-menu-text").html());
+            $list_item.remove();
+        }else if ($list_item.closest("[type='add-new']").length == 0) {
             let original_category = $list_item.closest(".class-selector").find(".selected-class p").html();
             let chosen_category = $list_item.find(".drop-menu-text").html();
             if ($list_item.closest(".main").length > 0) {
@@ -351,11 +358,12 @@ function addDropMenuListener() {
                     chrome.tabs.sendMessage(tabs[0].id, { type: "cur_meeting_update", category: chosen_category });
                 });
             } else {
+                //TODO: Refactor this
                 let moved_meeting = sorted_meetings[parseInt($list_item.closest(".element-container").attr("id"))];
-                console.log(moved_meeting);
-                console.log(meeting_database[original_category]);
+                // console.log(moved_meeting);
+                // console.log(meeting_database[original_category]);
                 meeting_database[original_category] = meeting_database[original_category].filter(item => item != moved_meeting);
-                console.log(meeting_database[original_category]);
+                // console.log(meeting_database[original_category]);
                 moved_meeting.category = chosen_category;
                 meeting_database[chosen_category].push(moved_meeting);
             }
@@ -393,8 +401,18 @@ function addCategory(cat) {
         return false;
     }
 }
+function removeCategory(cat){
+    if(meeting_database[cat]){
+        console.log(cat);
+        for(let i = 0; i<meeting_database[cat].length; i++){
+            meeting_database[cat][i].category = consts.UNCAT;
+            meeting_database[consts.UNCAT].push(meeting_database[cat][i]);
+        }
+        delete meeting_database[cat];
+        updateMeetingStorage();
+    }
+}
 function toggleMeetingDropdown(this1) {
-    console.log("uhh");
     let $menu = $(this).closest(".class-selector").find(".drop-menu");
     if ($menu.length == 0) {
         $menu = this1.closest(".class-selector").find(".drop-menu");
@@ -434,9 +452,17 @@ function createListItem($menu, content, add_class = false) {
     if (add_class) {
         clone.querySelector(".drop-menu-item").setAttribute('type', "add-new");
     }
+    
     if ($menu) {
-        $menu.append(clone);
-
+        if(content==consts.UNCAT){
+            clone.querySelector(".drop-menu-item").classList.add('undeletable');
+        }
+        let $clone = $(clone).appendTo($menu);
+        
+        if(content==consts.UNCAT){
+            $clone.addClass("undeletable");
+            // clone.classList.append("undeletable");
+        }
     } else {
         return $(clone);
     }
@@ -489,7 +515,7 @@ function setUpMeetingsPage() {
                 //first part checks if user has clicked inside of class_selector
                 //Only allows class selector dropdown to open if panel has been opened. (and it's not a 'live' panel)
                 if ($drop_menu.length == 0) {
-                    console.log($(this));
+                    // console.log($(this));
                     toggleMeetingDropdown($class_selector);
 
                 }
@@ -586,7 +612,7 @@ function updateSpeakerData3(meeting, chart, max_items = 7, one_time = false) {
 
 
     let max = 1;
-    let users = timer_graph_data;
+    let users = current_meeting_user_data;
     if (one_time) {
         users = [];
     }
@@ -748,7 +774,7 @@ function renderSubCharts(_, _, config) {
         }
         data_two.sort((a, b) => b[1] - a[1]);
         data_two = data_two.slice(1, 7);
-        console.log(data_one, data_two_raw);
+        // console.log(data_one, data_two_raw);
         data_one.sort((a, b) => a[0] - b[0]);
         $("#meeting-graph-one").html("");
         $("#meeting-graph-two").html("");
@@ -764,8 +790,40 @@ function renderSubCharts(_, _, config) {
     }
 
 }
+function filterMeetings(_,_,config){
+    // console.log(chart);
+    // console.log(config);
+    // console.log(config.dataPointIndex);
+    let cat = meeting_pie_cats[config.dataPointIndex];
+    if($("#meetings-container").attr("filter")!=cat){
+        $("#meetings-container").attr("filter",cat);
+        filterMeetingsHelper(cat);
+        $(".date-divider").css("display","none");
+    }else{
+        $("#meetings-container").attr("filter","!----");
+        filterMeetingsHelper(null);
+        $(".date-divider").css("display","block");
 
+    }
+}
+function filterMeetingsHelper(cat){
+    
+    let class_names = $("#meetings-container .class-name");
+        for(let i = 0; i<class_names.length; i++){
+            let $name = $(class_names[i]);
+            let $container = $name.closest(".element-container");
+            console.log($name.html()+" "+($name.html()==cat));
+            if(cat && $name.html() != cat){
+                $container.css("display","none");
+                // class_names.style.display = "none";
+            }else{
+                $container.css("display","block");
 
+                // class_names.style.display = "block";
+
+            }
+    }
+}
 
 
 

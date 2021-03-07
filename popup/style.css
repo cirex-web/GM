@@ -3,14 +3,16 @@
     background: transparent;  
 }
 input{
-    font-size: .8em;
     position: relative;
     padding: 0;
     width: 100%;
+    border: 0;
     /* height: 100%; */
     margin: 0;
-    box-sizing: border-box;
+    /* box-sizing: border-box; */
     margin-right: 10px;
+    font-size: inherit;
+    outline: none;
 }
 body{
     position: relative;
@@ -180,7 +182,7 @@ p{
 .image-container{
     height: 100%;
     position: relative;
-    z-index: 1;
+    z-index: 20;
 }
 .bar-bar{
     /* transition: .2s all; */
@@ -194,6 +196,7 @@ p{
     box-sizing: border-box;
     background-color: black;
     overflow: hidden;
+    z-index: 10;
 }
 .bar.active .bar-bar{
     border-color: green;
@@ -217,7 +220,7 @@ p{
     white-space: nowrap;
     box-sizing: border-box;
 }
-.bar-bar::before{
+/* .bar-bar::before{
     width: 100vw;
     height: 100%;
     content: "";
@@ -225,14 +228,14 @@ p{
     top: 0;
     left: 0;
     z-index: 10;
-}
+} */
 .bar-txt-overflow{
     font-size: 20px;
     position: absolute;
     top: 50%;
     left: 37px;
     transform: translate(0, -50%);
-    z-index: -1;
+    z-index: 5;
     white-space: nowrap;
 }
 .bar-bar-container{
@@ -265,7 +268,7 @@ p{
     opacity: 0;
 }
 .class-selector.clicked .select-symbol{
-    transform: rotate(180deg);
+    transform: rotateX(180deg);
 }
 .selected-class{
     border: 2px dashed transparent;
@@ -301,14 +304,13 @@ p{
     background: white;
     max-height: 200px;
     /* transform: scaleY(0); */
-    transform: translate(0,0px);
+    transform: translate(0,-10px);
     transform-origin: top;
     width: 100%;
     transition: .4s all;
     overflow: auto;
     position: absolute;
     z-index: 999; 
-    /* idk if I don't do this the user can hover the stuff underneath it */
     left: 0px;
     opacity: 0;
     /* border-bottom-left-radius: 10px;
@@ -318,16 +320,19 @@ p{
     box-sizing: border-box;
     min-width: 200px;
     overflow-wrap: anywhere;
+    font-size: 17px;
+
+
     /* border: 1px solid black; */
 }
 .class-selector.clicked .drop-menu{
     /* animation: show-menu .1s linear; */
     /* animation-fill-mode:forwards; */
-    transform: translate(0,10px);
+    transform: translate(0,0);
 
     /* transform: scaleY(1); */
     opacity: 1;
-    box-shadow: 0 0 5px black;
+    box-shadow: 0px 0px 20px 0px #00000073;
 }
 /* .class-selector.un-clicked .drop-menu{
     animation: show-menu .1s linear;
@@ -350,10 +355,13 @@ p{
 } */
 .drop-menu-item-remove{
     display: none;
+    height: 17px;
 }
-.drop-menu-item:hover:not([type='add-new']) .drop-menu-item-remove{
-    display: block;
-    height: .8em;
+.drop-menu-item:hover:not([type='add-new']):not(.undeletable) .drop-menu-item-remove{
+display: block;
+}
+.drop-menu-item-add{
+    height: 20px;
 }
 /* For toggling the add class dropdown item */
 .drop-menu-input,.drop-menu-item.active .drop-menu-text{
@@ -367,7 +375,6 @@ p{
     display: block;
     flex-grow: 10;
     /* height: 24px; */
-    font-size: .8em;
 }
 
 .element-container{
@@ -534,4 +541,7 @@ img[ref]:hover{
     display: flex;
     box-shadow: 0px 0px 10px;
 
+}
+.m20{
+    width: 20px;
 }
