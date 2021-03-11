@@ -6,7 +6,7 @@ let STR = {
 }
 let user_database, cur_meeting, meeting_database, all_cur_meetings;
 let page;
-let seen_analysis = false, rendered_meetings_page = false, seen_history = false;
+let seen_analysis = false;
 
 let sorted_meetings = [];
 let main_bar_data = [];
@@ -133,12 +133,14 @@ let graph_templates = {
 let history_page_meta = {
     meetings_pie: undefined,
     filter: undefined,
-    meeting_cats : [],
-    meeting_cat_freq : []
+    meeting_cats: [],
+    meeting_cat_freq: [],
+    rendered: false,
+    seen: false //For the animations
 }
 
 
-const fac = new FastAverageColor();
+// const fac = new FastAverageColor();
 const arCol = (arr, n) => arr.map(x => x[n]);
 
 /*
@@ -174,7 +176,6 @@ Value:{
 window.onload = () => {
     getAllData();
     setUpTabs();
-
     getVersion((version) => {
         $("#version").html(version);
     });
@@ -186,10 +187,10 @@ function createPieChart(x, y, container, template) {
         series: y,
         labels: x
     });
-    console.log(options);
+    // console.log(options);
     var chart = new ApexCharts(container, options);
 
-    chart.render();
+    // chart.render();
     return chart;
 }
 function createChart(x, y, label_name, container, template) {
@@ -245,34 +246,27 @@ function setUpTabs() {
 
             renderMainCharts();
             seen_analysis = true;
-        } else if (page == 'H' && !seen_history) {
-            seen_history = true;
-            let options = {
-                useEasing: true,
-                separator: ',',
-                decimal: '.',
-                prefix: '',
-                suffix: ''
-            };
+        } else if (page == 'H' && !history_page_meta.seen) {
+            history_page_meta.seen = true;
+
             new CountUp('meeting-number', 0, sorted_meetings.length).start();
             // new CountUp('meeting-people', 0, Object.keys(user_database).length).start();
-            generateCatFrequency();
-            history_page_meta.meetings_pie = createPieChart(history_page_meta.meeting_cats, history_page_meta.meeting_cat_freq, $("#meeting-cats")[0], graph_templates.history_meetings_pie);
-
+            history_page_meta.meetings_pie.render();
+            //*
         }
         $(this).addClass("selected");
     });
     $(".tab-container[ref=C]").css("display", "block");
 }
-function generateCatFrequency(){
+function generateCatFrequency() {
     history_page_meta.meeting_cat_freq = [];
     history_page_meta.meeting_cats = [];
 
     let freq = history_page_meta.meeting_cat_freq;
     let meeting_cats = history_page_meta.meeting_cats;
-    
+
     for (let i = 0; i < sorted_meetings.length; i++) {
-        if(!sorted_meetings[i])continue;
+        if (!sorted_meetings[i]) continue;
         let cat = sorted_meetings[i].category;
         if (!meeting_cats.includes(cat)) {
             meeting_cats.push(cat);
@@ -349,11 +343,12 @@ function getAllData() {
             user_database = await getFromStorage(STR.users);
             all_cur_meetings = await getFromStorage(STR.all_cur_meetings);
 
-            if (!rendered_meetings_page && meeting_database) {
+            if (!history_page_meta.rendered && meeting_database) {
+                cleanDatabase();
                 $("[ref='H'] .full-disp").css('display', 'none');
                 setUpMeetingsPage();
                 addDropMenuListener();
-                rendered_meetings_page = true;
+                history_page_meta.rendered = true; //*
             }
         })
     });
@@ -385,7 +380,7 @@ function addDropMenuListener() {
             }
             updateMeetingStorage();
             let class_header = $(this).closest(".class-selector").find(".selected-class");
-            // class_header.find("p").html(chosen_category);
+            class_header.find(".class-name").html(chosen_category);
             toggleMeetingDropdown($list_item);
         } else {
             if ($list_item.closest("[ready='true']").length == 0) {
@@ -486,6 +481,7 @@ function createListItem($menu, content, add_class = false) {
     }
 }
 function setUpMeetingsPage() {
+
     for (let cat of Object.keys(meeting_database)) {
         for (let meeting of meeting_database[cat]) {
             sorted_meetings.push(meeting);
@@ -497,6 +493,11 @@ function setUpMeetingsPage() {
         }));
     }
     sorted_meetings.sort((a, b) => b.lastUpdated - a.lastUpdated);
+
+
+    generateCatFrequency();
+    history_page_meta.meetings_pie = createPieChart(history_page_meta.meeting_cats, history_page_meta.meeting_cat_freq, $("#meeting-cats")[0], graph_templates.history_meetings_pie);
+
 
     let date = "";
     for (let [i, meeting] of sorted_meetings.entries()) {
@@ -510,7 +511,7 @@ function setUpMeetingsPage() {
     }
     $(".meeting-top").on('click mouseover mouseleave', function (ev) {
 
-
+        //TODO: Refactor
         let $target = $(ev.target);
         let inside_dropdown = $target.closest(".drop-menu").length > 0;
         if ($target.hasClass('meeting-page-trash')) {
@@ -843,31 +844,53 @@ function filterMeetingsHelper(cat) {
 }
 
 function updateMeetingsPage() {
+    console.log("updating");
+    let deleted = 0;
     for (let i = 0; i < sorted_meetings.length; i++) {
-        if(!sorted_meetings[i])continue;
+        if (!sorted_meetings[i]) {
+            deleted++;
+            continue;
+        }
         $("#" + i + " .class-name").html(sorted_meetings[i].category);
         
     }
-    if(!meeting_database[history_page_meta.filter]){
-        //click back to no filter
-        if(history_page_meta.meetings_pie.w.globals.selectedDataPoints[0]&&history_page_meta.meetings_pie.w.globals.selectedDataPoints[0][0]){
-            let cur = history_page_meta.meetings_pie.w.globals.selectedDataPoints[0][0];
-            history_page_meta.meetings_pie.toggleDataPointSelection(cur);
-        }
+    $("#meeting-number").html(sorted_meetings.length-deleted);
+    // console.log(sorted_meetings);
+    if (history_page_meta.rendered) {
+        if (!meeting_database[history_page_meta.filter]) {
+            //click back to no filter
 
-    }else{
-        filterMeetingsHelper(history_page_meta.filter);
-        //update the stuff
+            if (history_page_meta.meetings_pie.w.globals.selectedDataPoints[0] &&
+                history_page_meta.meetings_pie.w.globals.selectedDataPoints[0][0]) {
+                let cur = history_page_meta.meetings_pie.w.globals.selectedDataPoints[0][0];
+                history_page_meta.meetings_pie.toggleDataPointSelection(cur);
+            }
+
+
+
+        } else {
+            filterMeetingsHelper(history_page_meta.filter);
+            //update the stuff
+        }
+        generateCatFrequency();
+        history_page_meta.meetings_pie.updateOptions({
+            labels: history_page_meta.meeting_cats,
+            series: history_page_meta.meeting_cat_freq
+        });
+
     }
-    generateCatFrequency();
-    history_page_meta.meetings_pie.updateOptions({
-        labels: history_page_meta.meeting_cats,
-        series: history_page_meta.meeting_cat_freq
-    });
 
 }
 
+function cleanDatabase(){
+    for([key,obj] of Object.entries(meeting_database)){
+        for(let i =0; i<meeting_database[key].length; i++){
+            meeting_database[key][i].category = key;
+        }
 
+        console.log(obj);
+    }
+}
 
 
 

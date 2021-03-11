@@ -134,7 +134,7 @@ function addPopupListeners(){
                         }
                     });
                     $("data_transfer")[0].dispatchEvent(event);
-                    sendResponse({ ok: ":)" }); //my social life has become talking to various js scripts
+                    sendResponse({ ok: ":)" }); //my social life has amounted to talking to various js scripts
                 default:
                     break;
             }
