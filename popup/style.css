@@ -47,8 +47,9 @@ h1{
 }
 h2{
     margin: 0;
-    padding: 10px 0 10px 10px;
+    padding: 10px 0 10px 35px;
     font-size: 20px;
+    white-space: nowrap;
 }
 h3{
     padding: 10px;
@@ -313,6 +314,7 @@ p{
     z-index: 999; 
     left: 0px;
     opacity: 0;
+    border-radius: 5px;
     /* border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
 
@@ -321,7 +323,8 @@ p{
     min-width: 200px;
     overflow-wrap: anywhere;
     font-size: 17px;
-
+    padding: 10px;
+    /* box-sizing: content-box; */
 
     /* border: 1px solid black; */
 }
@@ -341,8 +344,8 @@ p{
 
 } */
 .drop-menu-item{
-    width: 100%;
     box-sizing: border-box;
+    margin: 0;
     padding: 10px;
     transition: .3s background;
     cursor: pointer;

@@ -10,7 +10,7 @@ let seen_analysis = false, rendered_meetings_page = false, seen_history = false;
 
 let sorted_meetings = [];
 let main_bar_data = [];
-let meeting_pie_cats = [];
+
 let header_names = {
     'C': "Current Meeting",
     "H": "Meeting History",
@@ -130,6 +130,12 @@ let graph_templates = {
     }
 
 }
+let history_page_meta = {
+    meetings_pie: undefined,
+    filter: undefined,
+    meeting_cats : [],
+    meeting_cat_freq : []
+}
 
 
 const fac = new FastAverageColor();
@@ -184,6 +190,7 @@ function createPieChart(x, y, container, template) {
     var chart = new ApexCharts(container, options);
 
     chart.render();
+    return chart;
 }
 function createChart(x, y, label_name, container, template) {
 
@@ -249,22 +256,31 @@ function setUpTabs() {
             };
             new CountUp('meeting-number', 0, sorted_meetings.length).start();
             // new CountUp('meeting-people', 0, Object.keys(user_database).length).start();
-            let freq = [];
-            for (let i = 0; i < sorted_meetings.length; i++) {
-                let cat = sorted_meetings[i].category;
-                if (!meeting_pie_cats.includes(cat)) {
-                    meeting_pie_cats.push(cat);
-                    freq.push(0);
-                }
-                freq[meeting_pie_cats.indexOf(cat)]++;
-
-            }
-            createPieChart(meeting_pie_cats, freq, $("#meeting-cats")[0], graph_templates.history_meetings_pie);
+            generateCatFrequency();
+            history_page_meta.meetings_pie = createPieChart(history_page_meta.meeting_cats, history_page_meta.meeting_cat_freq, $("#meeting-cats")[0], graph_templates.history_meetings_pie);
 
         }
         $(this).addClass("selected");
     });
     $(".tab-container[ref=C]").css("display", "block");
+}
+function generateCatFrequency(){
+    history_page_meta.meeting_cat_freq = [];
+    history_page_meta.meeting_cats = [];
+
+    let freq = history_page_meta.meeting_cat_freq;
+    let meeting_cats = history_page_meta.meeting_cats;
+    
+    for (let i = 0; i < sorted_meetings.length; i++) {
+        if(!sorted_meetings[i])continue;
+        let cat = sorted_meetings[i].category;
+        if (!meeting_cats.includes(cat)) {
+            meeting_cats.push(cat);
+            freq.push(0);
+        }
+        freq[meeting_cats.indexOf(cat)]++;
+
+    }
 }
 function renderMainCharts() {
     for (let cat of Object.keys(meeting_database)) {
@@ -345,11 +361,11 @@ function getAllData() {
 function addDropMenuListener() {
     $(".drop-menu").on('click', ".drop-menu-item", function (ev) {
         let $list_item = $(ev.target).closest('.drop-menu-item');
-        if($(ev.target).closest(".drop-menu-item-remove").length>0){
+        if ($(ev.target).closest(".drop-menu-item-remove").length > 0) {
 
             removeCategory($list_item.find(".drop-menu-text").html());
             $list_item.remove();
-        }else if ($list_item.closest("[type='add-new']").length == 0) {
+        } else if ($list_item.closest("[type='add-new']").length == 0) {
             let original_category = $list_item.closest(".class-selector").find(".selected-class p").html();
             let chosen_category = $list_item.find(".drop-menu-text").html();
             if ($list_item.closest(".main").length > 0) {
@@ -369,7 +385,7 @@ function addDropMenuListener() {
             }
             updateMeetingStorage();
             let class_header = $(this).closest(".class-selector").find(".selected-class");
-            class_header.find("p").html(chosen_category);
+            // class_header.find("p").html(chosen_category);
             toggleMeetingDropdown($list_item);
         } else {
             if ($list_item.closest("[ready='true']").length == 0) {
@@ -377,7 +393,9 @@ function addDropMenuListener() {
                 $list_item.attr('ready', 'true');
                 $list_item.find('input').focus();
                 $list_item.find('img').on('click', function () {
-                    let cat = $(this).closest(".drop-menu-input").find("input").val();
+                    let $input = $(this).closest(".drop-menu-input").find("input");
+                    let cat = $input.val();
+                    $input.val("");
                     if (addCategory(cat)) {
                         createListItem(undefined, cat, false).insertBefore($list_item);
 
@@ -393,7 +411,7 @@ function addDropMenuListener() {
     });
 }
 function addCategory(cat) {
-    if (cat != "" && !meeting_database[cat]) {
+    if (cat.replaceAll(" ", "") != "" && !meeting_database[cat]) {
         meeting_database[cat] = [];
         updateMeetingStorage();
         return true;
@@ -401,15 +419,15 @@ function addCategory(cat) {
         return false;
     }
 }
-function removeCategory(cat){
-    if(meeting_database[cat]){
-        console.log(cat);
-        for(let i = 0; i<meeting_database[cat].length; i++){
+function removeCategory(cat) {
+    if (meeting_database[cat]) {
+        for (let i = 0; i < meeting_database[cat].length; i++) {
             meeting_database[cat][i].category = consts.UNCAT;
             meeting_database[consts.UNCAT].push(meeting_database[cat][i]);
         }
         delete meeting_database[cat];
         updateMeetingStorage();
+
     }
 }
 function toggleMeetingDropdown(this1) {
@@ -452,14 +470,14 @@ function createListItem($menu, content, add_class = false) {
     if (add_class) {
         clone.querySelector(".drop-menu-item").setAttribute('type', "add-new");
     }
-    
+
     if ($menu) {
-        if(content==consts.UNCAT){
+        if (content == consts.UNCAT) {
             clone.querySelector(".drop-menu-item").classList.add('undeletable');
         }
         let $clone = $(clone).appendTo($menu);
-        
-        if(content==consts.UNCAT){
+
+        if (content == consts.UNCAT) {
             $clone.addClass("undeletable");
             // clone.classList.append("undeletable");
         }
@@ -487,7 +505,7 @@ function setUpMeetingsPage() {
             date = newDate;
             createMeetingDivider(date);
         }
-        createMeetingEl(meeting,i);
+        createMeetingEl(meeting, i);
 
     }
     $(".meeting-top").on('click mouseover mouseleave', function (ev) {
@@ -545,6 +563,7 @@ function setUpMeetingsPage() {
         let id = parseInt($container.attr("id"));
         let cat = sorted_meetings[id].category;
         meeting_database[cat] = meeting_database[cat].filter(item => item != sorted_meetings[id]);
+        sorted_meetings[id] = null;
         $container.addClass("removed");
         updateMeetingStorage();
         setTimeout(() => {
@@ -571,13 +590,13 @@ function setUpMeetingsPage() {
         content: "This meeting is ongoing and has not yet been moved to permanent storage."
     })
 }
-function createMeetingDivider(date){
+function createMeetingDivider(date) {
     let $clone = $($("#meeting-date-divider")[0].content.cloneNode(true));
     $clone.find(".date").html(date);
     $("#meetings-container").append($clone);
 
 }
-function createMeetingEl(meeting,i) {
+function createMeetingEl(meeting, i) {
     let clone = $("#meeting-data")[0].content.cloneNode(true);
     let $clone = $(clone);
     if (meeting.cur) {
@@ -607,6 +626,7 @@ function getFromStorage(key) {
 function updateMeetingStorage() {
     // console.log("updating meeting storage");
     chrome.storage.local.set({ [STR.all_other_meetings]: meeting_database });
+    updateMeetingsPage();
 }
 function updateSpeakerData3(meeting, chart, max_items = 7, one_time = false) {
 
@@ -790,42 +810,62 @@ function renderSubCharts(_, _, config) {
     }
 
 }
-function filterMeetings(_,_,config){
-    // console.log(chart);
-    // console.log(config);
-    // console.log(config.dataPointIndex);
-    let cat = meeting_pie_cats[config.dataPointIndex];
-    if($("#meetings-container").attr("filter")!=cat){
-        $("#meetings-container").attr("filter",cat);
+function filterMeetings(_, _, config) {
+
+    let cat = history_page_meta.meeting_cats[config.dataPointIndex];
+    if (history_page_meta.filter != cat) {
+        history_page_meta.filter = cat;
         filterMeetingsHelper(cat);
-        $(".date-divider").css("display","none");
-    }else{
-        $("#meetings-container").attr("filter","!----");
-        filterMeetingsHelper(null);
-        $(".date-divider").css("display","block");
+        $(".date-divider").css("display", "none");
+    } else {
+        history_page_meta.filter = undefined;
+        filterMeetingsHelper(undefined);
+        $(".date-divider").css("display", "block");
 
     }
 }
-function filterMeetingsHelper(cat){
-    
+function filterMeetingsHelper(cat) {
+
     let class_names = $("#meetings-container .class-name");
-        for(let i = 0; i<class_names.length; i++){
-            let $name = $(class_names[i]);
-            let $container = $name.closest(".element-container");
-            console.log($name.html()+" "+($name.html()==cat));
-            if(cat && $name.html() != cat){
-                $container.css("display","none");
-                // class_names.style.display = "none";
-            }else{
-                $container.css("display","block");
+    for (let i = 0; i < class_names.length; i++) {
+        let $name = $(class_names[i]);
+        let $container = $name.closest(".element-container");
+        if (cat && $name.html() != cat) {
+            $container.css("display", "none");
+            // class_names.style.display = "none";
+        } else {
+            $container.css("display", "block");
 
-                // class_names.style.display = "block";
+            // class_names.style.display = "block";
 
-            }
+        }
     }
 }
 
+function updateMeetingsPage() {
+    for (let i = 0; i < sorted_meetings.length; i++) {
+        if(!sorted_meetings[i])continue;
+        $("#" + i + " .class-name").html(sorted_meetings[i].category);
+        
+    }
+    if(!meeting_database[history_page_meta.filter]){
+        //click back to no filter
+        if(history_page_meta.meetings_pie.w.globals.selectedDataPoints[0]&&history_page_meta.meetings_pie.w.globals.selectedDataPoints[0][0]){
+            let cur = history_page_meta.meetings_pie.w.globals.selectedDataPoints[0][0];
+            history_page_meta.meetings_pie.toggleDataPointSelection(cur);
+        }
 
+    }else{
+        filterMeetingsHelper(history_page_meta.filter);
+        //update the stuff
+    }
+    generateCatFrequency();
+    history_page_meta.meetings_pie.updateOptions({
+        labels: history_page_meta.meeting_cats,
+        series: history_page_meta.meeting_cat_freq
+    });
+
+}
 
 
 
