@@ -8,6 +8,7 @@ let user_database, cur_meeting, meeting_database, all_cur_meetings;
 let page;
 let seen_analysis = false;
 
+let debug = false;
 let sorted_meetings = [];
 let main_bar_data = [];
 
@@ -130,11 +131,45 @@ let graph_templates = {
     }
 
 }
+let graph_templates_2 = {
+    history_meetings_pie: {
+        chart: {
+            plotBackgroundColor: null,
+            plotBorderWidth: null,
+            plotShadow: false,
+            type: 'pie',
+            height: 150,
+            width: 160,
+            margin: 0
+        },
+
+        credits: {
+            enabled: false
+        },
+        title: {
+            text: ''
+        },
+
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                dataLabels: {
+                    enabled: false
+                },
+                showInLegend: false
+            }
+        },
+        series: [{
+            colorByPoint: true
+        }]
+    }
+}
 let history_page_meta = {
     meetings_pie: undefined,
     filter: undefined,
+    meetings_pie_data: [],
     meeting_cats: [],
-    meeting_cat_freq: [],
     rendered: false,
     seen: false //For the animations
 }
@@ -192,6 +227,13 @@ function createPieChart(x, y, container, template) {
 
     // chart.render();
     return chart;
+}
+function createPieChart2(data, id, template) {
+    // console.log(template);
+
+    let options = JSON.parse(JSON.stringify(template));
+    options.series[0].data = data;
+    return Highcharts.chart(id, options);
 }
 function createChart(x, y, label_name, container, template) {
 
@@ -251,30 +293,42 @@ function setUpTabs() {
 
             new CountUp('meeting-number', 0, sorted_meetings.length).start();
             // new CountUp('meeting-people', 0, Object.keys(user_database).length).start();
-            history_page_meta.meetings_pie.render();
+            // $("#meeting-cats").html("");
+            history_page_meta.meetings_pie.series[0].animate();
             //*
         }
         $(this).addClass("selected");
     });
     $(".tab-container[ref=C]").css("display", "block");
+    setUpButtons();
 }
-function generateCatFrequency() {
-    history_page_meta.meeting_cat_freq = [];
-    history_page_meta.meeting_cats = [];
+function setUpButtons() {
+    $("#no-meetings-notice button").on('click', filterMeetings);
+}
+function updateCategoryFrequency() {
+    let cats = history_page_meta.meeting_cats;
+    let freq = Array.from({ length: cats.length }, (_) => 0);
 
-    let freq = history_page_meta.meeting_cat_freq;
-    let meeting_cats = history_page_meta.meeting_cats;
 
     for (let i = 0; i < sorted_meetings.length; i++) {
         if (!sorted_meetings[i]) continue;
         let cat = sorted_meetings[i].category;
-        if (!meeting_cats.includes(cat)) {
-            meeting_cats.push(cat);
+        if (!cats.includes(cat)) {
+            cats.push(cat);
             freq.push(0);
         }
-        freq[meeting_cats.indexOf(cat)]++;
+        freq[cats.indexOf(cat)]++;
 
     }
+    history_page_meta.meetings_pie_data = [];
+    for (let i = 0; i < freq.length; i++) {
+        history_page_meta.meetings_pie_data.push({
+            name: cats[i],
+            y: freq[i]
+        });
+    }
+    history_page_meta.meetings_pie_data.sort((a, b) => -a.y + b.y);
+
 }
 function renderMainCharts() {
     for (let cat of Object.keys(meeting_database)) {
@@ -495,8 +549,39 @@ function setUpMeetingsPage() {
     sorted_meetings.sort((a, b) => b.lastUpdated - a.lastUpdated);
 
 
-    generateCatFrequency();
-    history_page_meta.meetings_pie = createPieChart(history_page_meta.meeting_cats, history_page_meta.meeting_cat_freq, $("#meeting-cats")[0], graph_templates.history_meetings_pie);
+    updateCategoryFrequency();
+    // history_page_meta.meetings_pie = createPieChart(history_page_meta.meeting_cats, history_page_meta.meeting_cat_freq, $("#meeting-cats")[0], graph_templates.history_meetings_pie);
+
+    history_page_meta.meetings_pie = createPieChart2(history_page_meta.meetings_pie_data, "meeting-cats", graph_templates_2.history_meetings_pie);
+    $("#meeting-cats").on('click', filterMeetings);
+    // const chart = Highcharts.chart('meeting-cats2', {
+    //     chart: {
+    //         type: 'bar',
+    //         width: 300,
+    //        height: 200
+    //     },
+    //     credits: {
+    //         enabled: false
+    //     },
+    //     title: {
+    //         text: 'Fruit Consumption'
+    //     },
+    //     xAxis: {
+    //         categories: ['Apples', 'Bananas', 'Oranges']
+    //     },
+    //     yAxis: {
+    //         title: {
+    //             text: 'Fruit eaten'
+    //         }
+    //     },
+    //     series: [{
+    //         name: 'Jane',
+    //         data: [1, 0, 4]
+    //     }, {
+    //         name: 'John',
+    //         data: [5, 7, 3]
+    //     }]
+    // });
 
 
     let date = "";
@@ -626,7 +711,10 @@ function getFromStorage(key) {
 }
 function updateMeetingStorage() {
     // console.log("updating meeting storage");
-    chrome.storage.local.set({ [STR.all_other_meetings]: meeting_database });
+    if(!debug){
+        chrome.storage.local.set({ [STR.all_other_meetings]: meeting_database });
+
+    }
     updateMeetingsPage();
 }
 function updateSpeakerData3(meeting, chart, max_items = 7, one_time = false) {
@@ -811,40 +899,69 @@ function renderSubCharts(_, _, config) {
     }
 
 }
-function filterMeetings(_, _, config) {
+function filterMeetings() {
 
-    let cat = history_page_meta.meeting_cats[config.dataPointIndex];
-    if (history_page_meta.filter != cat) {
-        history_page_meta.filter = cat;
-        filterMeetingsHelper(cat);
-        $(".date-divider").css("display", "none");
-    } else {
+
+    let cats = history_page_meta.meetings_pie.getSelectedPoints();
+    if (cats[0]) {
+        let cat = cats[0].name;
+        if (history_page_meta.filter != cat) {
+            history_page_meta.filter = cat;
+            filterMeetingsHelper(cat);
+            $(".date-divider").css("display", "none");
+        } 
+    }else {
         history_page_meta.filter = undefined;
         filterMeetingsHelper(undefined);
         $(".date-divider").css("display", "block");
+    }
+    if(history_page_meta.filter){
+        $(".filter").html(history_page_meta.filter);
+
+    }else{
+        $(".filter").html("None");
 
     }
+    
 }
 function filterMeetingsHelper(cat) {
-
+    let meeting_present = false;
     let class_names = $("#meetings-container .class-name");
     for (let i = 0; i < class_names.length; i++) {
         let $name = $(class_names[i]);
         let $container = $name.closest(".element-container");
         if (cat && $name.html() != cat) {
             $container.css("display", "none");
+
+            setTimeout(() => {
+                $container.removeClass("clicked")
+            }, 1000);
+
+            // console.log($container);
             // class_names.style.display = "none";
         } else {
             $container.css("display", "block");
+            if (!$container.hasClass("removed")) {
+                meeting_present = true;
 
+            }
             // class_names.style.display = "block";
 
         }
     }
+    if (!meeting_present) {
+        // console.log("meeting gone");
+        $("#no-meetings-notice").css("display", "block");
+        for(let point of history_page_meta.meetings_pie.getSelectedPoints()){
+            point.select(false);
+        }
+    } else {
+        $("#no-meetings-notice").css("display", "none");
+
+    }
 }
 
 function updateMeetingsPage() {
-    console.log("updating");
     let deleted = 0;
     for (let i = 0; i < sorted_meetings.length; i++) {
         if (!sorted_meetings[i]) {
@@ -852,43 +969,27 @@ function updateMeetingsPage() {
             continue;
         }
         $("#" + i + " .class-name").html(sorted_meetings[i].category);
-        
     }
-    $("#meeting-number").html(sorted_meetings.length-deleted);
+    $("#meeting-number").html(sorted_meetings.length - deleted);
     // console.log(sorted_meetings);
     if (history_page_meta.rendered) {
-        if (!meeting_database[history_page_meta.filter]) {
-            //click back to no filter
 
-            if (history_page_meta.meetings_pie.w.globals.selectedDataPoints[0] &&
-                history_page_meta.meetings_pie.w.globals.selectedDataPoints[0][0]) {
-                let cur = history_page_meta.meetings_pie.w.globals.selectedDataPoints[0][0];
-                history_page_meta.meetings_pie.toggleDataPointSelection(cur);
-            }
+        filterMeetingsHelper(history_page_meta.filter);
 
+        updateCategoryFrequency();
+        history_page_meta.meetings_pie.series[0].setData(history_page_meta.meetings_pie_data);
+        console.log(history_page_meta.meetings_pie_data);
 
-
-        } else {
-            filterMeetingsHelper(history_page_meta.filter);
-            //update the stuff
-        }
-        generateCatFrequency();
-        history_page_meta.meetings_pie.updateOptions({
-            labels: history_page_meta.meeting_cats,
-            series: history_page_meta.meeting_cat_freq
-        });
 
     }
 
 }
 
-function cleanDatabase(){
-    for([key,obj] of Object.entries(meeting_database)){
-        for(let i =0; i<meeting_database[key].length; i++){
+function cleanDatabase() {
+    for ([key, obj] of Object.entries(meeting_database)) {
+        for (let i = 0; i < meeting_database[key].length; i++) {
             meeting_database[key][i].category = key;
         }
-
-        console.log(obj);
     }
 }
 

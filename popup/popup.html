@@ -14,6 +14,7 @@
   <script src="/external/tippy.js"></script>
   <script src="/external/apex.js"></script>
   <script src="/external/countUp.js"></script>
+  <script src="/external/highCharts.js"></script>
 
   <link rel="stylesheet" href="/external/scale.css" />
   <script src="popup.js"></script>
@@ -82,15 +83,23 @@
     <div class="meetings-general-data">
       <div class="data-square">
         <div id="meeting-number">0</div><span class="subtitle">Tracked Meetings</span>
+        <div class="divider"></div>
+        <h4>Current filter: <div class="filter">None</div></h4>
       </div>
-      <div class="data-square">
+      <div class="data-square no-grow">
         <div id="meeting-cats"></div>
+
+
       </div>
 
       <!-- <div class="data-square"><div id="meeting-people">0</div><span class="subtitle">Tracked People</span></div> -->
 
     </div>
 
+    <div class="notice" id="no-meetings-notice">
+      <h3>There are no meetings under this current filter</h3>
+      <button>Return to all</button>
+    </div>
     <div id="meetings-container" >
       
     </div>
@@ -100,7 +109,7 @@
       <div class="graph" id="main-bar"></div>
     </div>
     <div id="meeting-data-container">
-      <h1 id="meeting-title">Data breakdown for <span>iojij</span></h1>
+      <h1 id="meeting-title">Data breakdown for <span>{cat}</span></h1>
       <div class="element-container">
         <div class="graph" id="meeting-graph-one"></div>
       </div>
@@ -156,7 +165,7 @@
           <div class="selected-class">
             <img class="meeting-page-question" src="../icons/help.svg"></img>
 
-            <p class="class-name no-wrap" txt="Meet">Classss</p>
+            <p class="class-name no-wrap" txt="Meet">{Class}</p>
 
             <img class="select-symbol" src="../icons/down-arrow.svg"></img>
           </div>

@@ -57,11 +57,24 @@ h3{
     margin: 0;
     margin-top: 30px;
 }
-
+h4{
+    font-size: 15px;
+    margin: 0;
+}
 p{
     margin: 0;
     flex-grow: 1;
     position: relative;
+}
+button{
+    font-size: 20px;
+    border: none;
+    /* user-select: none; */
+    padding: 10px;
+    
+}
+button:hover{
+    cursor: pointer;
 }
 .title{
     padding: 10px 0;
@@ -320,7 +333,7 @@ p{
 
     border: 3px solid #000; */
     box-sizing: border-box;
-    min-width: 200px;
+    min-width: 160px;
     overflow-wrap: anywhere;
     font-size: 17px;
     padding: 10px;
@@ -537,9 +550,13 @@ img[ref]:hover{
     padding: 20px 0;
     font-size: 30px;
     margin: 0;
+    max-width: 50%;
+}
+.data-square.no-grow{
+    flex-grow: 0;
 }
 .meetings-general-data{
-    padding-left: 20px;
+    padding: 20px;
     margin: 20px;
     display: flex;
     box-shadow: 0px 0px 10px;
@@ -547,4 +564,28 @@ img[ref]:hover{
 }
 .m20{
     width: 20px;
+}
+.notice{
+    margin: 20px;
+    text-align: center;
+    /* border-color: gray;
+    border: 1px solid; */
+    padding: 20px;
+    display: none;
+}
+
+#meeting-cats{
+    font-size: 12px;
+}
+.filter{
+    text-overflow: ellipsis;
+    font-weight: lighter;
+    font-size: 20px;
+    width: 100%;
+    overflow: hidden;
+}
+.divider{
+    width: 50%;
+    margin: 20px auto;
+    border: 1px solid gray;
 }
