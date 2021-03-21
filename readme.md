@@ -33,7 +33,7 @@ Theme
 
 Other Use Examples
 ===
-  Teachers no longer have to keep track of who has already been called on in class; a quick glance will do.
+Teachers no longer have to keep track of who has already been called on in class; a quick glance will do.
 Gain unexpected insights into the talking patterns of students and teachers
 Prevent a student from dominating the conversation
 Encourages quieter students to participate
