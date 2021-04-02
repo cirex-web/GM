@@ -1,134 +1,45 @@
+"use strict"
+
 let debug = false;
 let consts = {
     UNCAT: "UNCATEGORIZED",
 
 }
-
+let SETTINGS = {
+    max_per_page: 10
+}
 
 // const fac = new FastAverageColor();
-const arCol = (arr, n) => arr.map(x => x[n]);
+// const arCol = (arr, n) => arr.map(x => x[n]);
 
-window.onload = () => {
-
-    Main.init();
-    MeetStorage.init();
-
-}
+window.onload = () => Main.init();
 let Util = function () {
-    let graph_templates = {
-        main_bar: {
-            chart: {
-                type: 'bar',
-                toolbar: {
-                    show: false
-                },
-                events: {
-                    // click: renderSubCharts
-                }
-
-
-            },
-            dataLabels: {
-                enabled: false,
-                formatter: function (val) {
-                    return val + " min";
-                },
-            },
-            plotOptions: {
-                bar: {
-                    horizontal: true,
-                }
-            },
-            title: {
-                text: "Avg. Total Speaking Time per Class",
-                align: "left",
-                floating: false,
-                margin: 10,
-                style: {
-                    fontSize: "20px"
-                }
-            }
-        },
-        meeting_bar_one: {
-            chart: {
-                height: 142,
-                width: "100%",
-                type: "line",
-                toolbar: {
-                    show: false
-                }
-            },
-            xaxis: {
-                type: 'datetime'
-            },
-            title: {
-                text: "Speaking Time History",
-                align: "left",
-                floating: false,
-                margin: 10,
-                style: {
-                    fontSize: "20px"
-                }
-            }
-        },
-        meeting_bar_two: {
-            chart: {
-                height: 200,
-                width: "100%",
-                type: "bar",
-                toolbar: {
-                    show: false
-                }
-            },
-            dataLabels: {
-                enabled: false
-            },
-            title: {
-                text: "Most Active Students (Teacher Hidden)",
-                align: "left",
-                floating: false,
-                margin: 10,
-                style: {
-                    fontSize: "15px"
-                }
-            },
-            plotOptions: {
-                bar: {
-                    horizontal: true,
-                }
-            }
-
-
-        }
-
-
+    let createPieChart = function (data, id, template) {
+        let options = JSON.parse(JSON.stringify(template));
+        options.series[0].data = data;
+        return Highcharts.chart(id, options);
     },
-        createPieChart = function (data, id, template) {
-            let options = JSON.parse(JSON.stringify(template));
-            options.series[0].data = data;
-            return Highcharts.chart(id, options);
-        },
-        createChart = function (x, y, label_name, container, template) {
+        // createChart = function (x, y, label_name, container, template) {
 
-            let options = $.extend({}, template, {
-                series: [{
-                    name: label_name,
-                    data: y
-                }],
+        //     let options = $.extend({}, template, {
+        //         series: [{
+        //             name: label_name,
+        //             data: y
+        //         }],
 
 
-            });
-            if (x) {
-                $.extend(options, {
-                    xaxis: {
-                        categories: x
-                    }
-                });
-            }
-            var chart = new ApexCharts(container, options);
+        //     });
+        //     if (x) {
+        //         $.extend(options, {
+        //             xaxis: {
+        //                 categories: x
+        //             }
+        //         });
+        //     }
+        //     var chart = new ApexCharts(container, options);
 
-            chart.render();
-        },
+        //     chart.render();
+        // },
         generateDate = function (mm) {
             return new Date(mm).toLocaleDateString();
         },
@@ -155,18 +66,119 @@ let Util = function () {
         getVersion = function (callback) {
             var xmlhttp = new XMLHttpRequest();
             xmlhttp.open('GET', '../manifest.json');
-            xmlhttp.onload = function (e) {
+            xmlhttp.onload = function () {
                 var manifest = JSON.parse(xmlhttp.responseText);
                 callback(manifest.version);
             }
             xmlhttp.send(null);
+        },
+        msToMin = function (ms) {
+            return Math.round(ms / 60 / 100) / 10;
+        },
+        createFullPage = function (url, $win) {
+            return new Promise((re) => {
+                let frame = document.createElement("iframe");
+                frame.setAttribute("src", url);
+                frame.classList.add("full-page");
+                frame.classList.add("hidden"); //Otherwise the page is visible for a split second before the css loads
+
+                $(frame).appendTo($win).on('load', (ev) => {
+                    // console.log(ev.currentTarget);
+
+                    let $frame = $(ev.currentTarget);
+
+                    if ($frame.closest(".page").length > 0) {
+                        let $script = $(createCSSLink("style.css"));
+                        $script[0].onload = function () {
+                            transitionToNewPage($frame).then(() => re($frame));
+                        };
+
+                        $script.appendTo($frame.contents().find("head"));
+                    } else {
+
+                        let div = document.createElement("div");
+                        div.classList.add("page");
+                        $frame.wrap(div);
+                    }
+
+                });
+            });
+
+
+
+        },
+        transitionToNewPage = function ($frame) {
+            return new Promise((re) => {
+                let prev_page = $frame.parent().parent().find(".page.active");
+                let lev = parseInt(prev_page.attr("lev"));
+                prev_page.removeClass("active").addClass("below");
+                $frame.removeClass("hidden");
+                $frame.closest(".page").addClass("active").attr("lev", lev + 1);
+                showBackArrow();
+                re($frame);
+            });
+
+        },
+        goToPrevPage = function ($page) {
+            let lev = parseInt($page.attr("lev")) - 1;
+            console.log($page);
+            if (lev >= 0) {
+
+                let $prev_page = $page.parent().find(".page[lev=" + lev + "]");
+                $page.removeClass("active");
+                setTimeout(() => {
+                    $page.remove();
+                }, 1000);
+                $prev_page.removeClass("below").addClass("active");
+
+            }
+            if (lev <= 0) {
+                hideBackArrow();
+            }
+        },
+        hideBackArrow = function () {
+            $(".heading-arrow").addClass("hidden");
+        },
+        showBackArrow = function () {
+            $(".heading-arrow").removeClass("hidden");
+        },
+        createCSSLink = function (url) {
+            let link = document.createElement("link");
+            link.href = url;
+            link.rel = "stylesheet";
+            link.type = "text/css";
+            return link;
+        },
+        createRippleEffect = function ($button, evt) {
+            console.log($button);
+            let btn = $(evt.currentTarget);
+            let x = evt.pageX - btn.offset().left;
+            let y = evt.pageY - btn.offset().top;
+
+            let ripple = $(`<span class="ripple"></span>`).appendTo($button).css({
+                left: x,
+                top: y
+            });
+            setTimeout(() => {
+                ripple.remove();
+            }, 500);
+        },
+        getLength = function (n) {
+            return n.toString().length;
         }
     return {
         createPieChart: createPieChart,
         getVersion: getVersion,
         generateDate: generateDate,
         generateFullDate: generateFullDate,
-        msToString: msToString
+        msToString: msToString,
+        msToMin: msToMin,
+        createFullPage: createFullPage,
+        getLength: getLength,
+        goToPrevPage: goToPrevPage,
+        showBackArrow: showBackArrow,
+        hideBackArrow: hideBackArrow,
+        createRippleEffect, createRippleEffect
     }
 }();
 let Main = function () {
@@ -175,27 +187,28 @@ let Main = function () {
         "H": "Meeting History",
         "A": "Analysis"
     },
-
-
-        page,
-        main_bar_data = [],
-        current_meeting_user_data = []; //TODO: Move some of these to somewhere
+        page = 'C';
     let setUpTabs = function () {
         $(".selected-class").on("click", SpeakingUtil.toggleMeetingDropdown);
         $(".tab-button").click(function (evt) {
-            let btn = $(evt.currentTarget);
-            let x = evt.pageX - btn.offset().left;
-            let y = evt.pageY - btn.offset().top;
             page = $(this).attr("ref");
-            let ripple = $(`<span class="ripple"></span>`).appendTo($(this)).css({
-                left: x,
-                top: y
-            });
-            setTimeout(() => {
-                ripple.remove();
-            }, 500);
-            $("#tab-container-heading").html(header_names[page]);
+
+            Util.createRippleEffect($(this), evt);
+            handleTabChange();
+            if (page == "A") {
+                AnalysisPage.animate();
+            } else if (page == 'H') {
+                MeetingHistory.animate();
+            }
+        });
+        handleTabChange();
+        setUpButtons();
+    },
+        handleTabChange = function () {
+
+            $(".main-heading-txt").html(header_names[page]);
             $(".tab-container").css("display", "none");
+            $(".tab-container[ref=" + page + "]").css("display", "block");
             $(".tab-icon").each((_, tab) => {
                 tab.src = tab.src.replace("-active", "");
 
@@ -203,30 +216,34 @@ let Main = function () {
                     tab.src = tab.src.replace(".", "-active.");
                 }
             });
-
-
-            $(".tab-container[ref=" + page + "]").css("display", "block");
-            if (page == "A") {
-                AnalysisPage.animate();
-            } else if (page == 'H') {
-                MeetingHistory.animate();
+            let page_lev = $(".tab-container[ref=" + page + "]").find(".page.active").attr("lev");
+            if(parseInt(page_lev)>0){
+                Util.showBackArrow();
+            }else{
+                Util.hideBackArrow();
             }
-            $(this).addClass("selected");
-        });
-        $(".tab-container[ref=C]").css("display", "block");
-        setUpButtons();
-    },
+
+        },
+
         setUpButtons = function () {
             $("#no-meetings-notice button").on('click', MeetingHistory.filterMeetings);
+
+            $(".heading-arrow").on('click', () => {
+                let $page = $(".tab-container[ref='" + page + "'] .page.active");
+                Util.goToPrevPage($page);
+
+            });
         },
         init = function () {
             setUpTabs();
+            MeetStorage.init();
             Util.getVersion((version) => {
                 $("#version").html(version);
             });
         }
     return {
         init: init
+
     }
 }();
 
@@ -276,7 +293,7 @@ let MeetingHistory = function () {
         sorted_meetings = [];
     let updateCategoryFrequency = function () {
         let cats = meta.meeting_cats;
-        let freq = Array.from({ length: cats.length }, (_) => 0);
+        let freq = Array.from({ length: cats.length }, () => 0);
 
 
         for (let i = 0; i < sorted_meetings.length; i++) {
@@ -301,8 +318,8 @@ let MeetingHistory = function () {
     },
         setUpMeetingsPage = function () {
             let meeting_database = MeetStorage.get_meeting_database();
-            if (meta.rendered) return;
-            meta.rendered = true;
+            $("[ref='H'] .full-disp").css('display', 'none');
+            console.info("[GM] setting up meetings page");
             let all_cur_meetings = MeetStorage.get_all_cur_meetings();
             for (let cat of Object.keys(meeting_database)) {
                 for (let meeting of meeting_database[cat]) {
@@ -450,10 +467,10 @@ let MeetingHistory = function () {
                 $(".date-divider").css("display", "block");
             }
             if (meta.filter) {
-                $(".filter").html(meta.filter);
+                $(".cur-filter").html(meta.filter);
 
             } else {
-                $(".filter").html("None");
+                $(".cur-filter").html("None");
 
             }
 
@@ -495,6 +512,7 @@ let MeetingHistory = function () {
             }
         },
         updateMeetingsPage = function () {
+            console.log("udpating");
             let deleted = 0;
             for (let i = 0; i < sorted_meetings.length; i++) {
                 if (!sorted_meetings[i]) {
@@ -525,22 +543,204 @@ let MeetingHistory = function () {
                 meta.meetings_pie.series[0].animate();
 
             }
+        },
+        getMeetingById = function (id) {
+            return sorted_meetings[id];
         }
     return {
         filterMeetings: filterMeetings,
         setUpPage: setUpMeetingsPage,
         animate: animateMeetingsPage,
         update: updateMeetingsPage,
-        get_sorted_meetings: () => sorted_meetings
+        get_sorted_meetings: () => sorted_meetings,
+        getMeetingById: getMeetingById
     }
 }();
 let AnalysisPage = function () {
+    let seen_analysis = false;
+    let catsAr = [],
+        usersAr = [],
+        users = {},
+        TEXT = {
+            user_leaderboard: "Most active participants",
+            class_leaderboard: "Most active classes"
+        }
     let animate = () => {
         //Conditions
         // && !seen_analysis && meeting_database && Object.keys(meeting_database).length > 0
-        // $("[ref='A'] .full-disp").css('display', 'none');
+        if (!seen_analysis && MeetingHistory.get_sorted_meetings().length > 5) {
+            seen_analysis = true;
 
-    }
+            let meeting_database = MeetStorage.get_meeting_database();
+            let user_database = MeetStorage.get_user_database();
+            for (let [name, cat] of Object.entries(meeting_database)) {
+                let total_time = 0;
+                for (let meeting of cat) {
+                    for (let [id, person] of Object.entries(meeting.user_data)) {
+                        let time = person.speaking_time;
+                        total_time += time;
+                        let URL = user_database[id].IMG_ID;
+                        let name = user_database[id].NAME;
+
+                        if (!users[URL]) {
+                            users[URL] = {
+                                total_speaking_time: time,
+                                num: 1,
+                                name: name,
+                                URL: URL
+                            }
+                            usersAr.push(users[URL]);
+                        } else {
+                            users[URL].total_speaking_time += time;
+                            users[URL].num++;
+                        }
+
+
+                    }
+                }
+                let avg = cat.length == 0 ? 0 : total_time / cat.length;
+                catsAr.push({
+                    avg_time: Util.msToMin(avg),
+                    name: name
+                });
+
+            }
+            catsAr.sort((a, b) => b.avg_time - a.avg_time);
+            usersAr.sort((a, b) => {
+                if (!a.avg) {
+                    a.avg = Util.msToMin(a.total_speaking_time / a.num);
+                }
+                if (!b.avg) {
+                    b.avg = Util.msToMin(b.total_speaking_time / b.num);
+                }
+                return b.avg - a.avg;
+            });
+            // console.log(usersAr,catsAr);
+            catsAr.par1 = "name";
+            catsAr.par2 = "avg_time";
+            usersAr.par1 = "name";
+            usersAr.par2 = "avg";
+            usersAr.par3 = "URL";
+            catsAr.title = TEXT.class_leaderboard;
+            usersAr.title = TEXT.user_leaderboard;
+            //TODO: lol how do I condense this
+            $("[ref='A'] .full-disp").css('display', 'none');
+
+            createRows($("#active-participants"), usersAr, 0, 3);
+            createRows($("#active-classes"), catsAr, 0, 3);
+            setUpInteractivity();
+            
+        }
+    },
+        setUpInteractivity = function () {
+            $("[ref='A'] a").on('click', async (ev) => {
+                let $win = $(".tab-container[ref='A']");
+                let $target = $(ev.target);
+                if ($target.attr("ref-type") == "leaderboard") {
+                    let $page = (await Util.createFullPage("t-leaderboard.html", $win)).contents();
+
+                    if ($target.attr("ref-id") == "user") {
+
+                        // console.log($target);
+
+                        createLeaderboardPage($page.find(".leaderboard"), usersAr);
+                    } else if ($target.attr("ref-id") == "classes") {
+                        createLeaderboardPage($page.find(".leaderboard"), catsAr);
+
+                    }
+
+                }
+            });
+        },
+        createLeaderboardPage = function ($leaderboard, data) {
+            let $input = $leaderboard.find("input.page-input");
+            $input.change(function () {
+                updateLeaderboard($leaderboard, $input, data);
+            });
+            $leaderboard.find(".max-items-selector button").on('click', function () {
+                let $button = $(this);
+                $leaderboard.find("button").removeClass("selected");
+                $button.addClass("selected");
+                SETTINGS.max_per_page = parseInt($button.attr("val"));
+                updateLeaderboard($leaderboard, $input, data);
+            });
+            $leaderboard.find(".row-icon").on('click', function () {
+                let $arrow = $(this);
+                let pg = parseInt($input.val());
+                if ($arrow.hasClass("left-arrow")) {
+                    $input.val(pg - 1);
+                } else {
+                    $input.val(pg + 1);
+                }
+                updateLeaderboard($leaderboard, $input, data);
+            });
+
+            let $active_button = $leaderboard.find("button[val=" + SETTINGS.max_per_page + "]");
+            if ($active_button.length == 0) {
+                SETTINGS.max_per_page = 10;
+                $active_button = $leaderboard.find("button[val=" + SETTINGS.max_per_page + "]");
+            }
+            $active_button.addClass("selected");
+            $leaderboard.find(".filter-button").on('click', function () {
+                $(this).parent().toggleClass("clicked");
+            });
+            $leaderboard.find("input.page-input").val(1).change();
+            // updateLeaderboard($leaderboard,1)
+            // $leaderboard.find("input.page-input")[0].prev_val = 1;
+
+        },
+        updateLeaderboard = function ($leaderboard, $input, data) {
+            let max_per_page = SETTINGS.max_per_page == -1 ? data.length : SETTINGS.max_per_page;
+
+            let max_pages = Math.floor(data.length / max_per_page) + 1;
+            if (data.length % max_per_page == 0) max_pages--;
+            let page_num = $input.val();
+            $leaderboard.find(".max-pages").html(max_pages);
+            if (!isNaN(page_num) && page_num >= 1) {
+                $input.val(page_num);
+                if (page_num > max_pages) {
+                    $input.val(max_pages);
+                    page_num = max_pages;
+                }
+                $input[0].prev_val = page_num;
+                $leaderboard.find(".row-icon").removeClass("disabled");
+                if (page_num == 1) {
+                    $leaderboard.find(".left-arrow").addClass("disabled");
+                }
+                if (page_num == max_pages) {
+                    $leaderboard.find(".right-arrow").addClass("disabled");
+                }
+                createRows($leaderboard, data, max_per_page * (page_num - 1), max_per_page);
+            } else {
+                $input.val($input[0].prev_val);
+            }
+        },
+        createRows = function ($table, data, start, num) {
+            let namePar = data.par1;
+            let valPar = data.par2;
+            let url = data.par3;
+            let title = data.title;
+            $table.find(".heading-txt").html(title);
+            let $cont = $table.find(".row-container");
+            $cont.html("");
+
+            let maxNum = Math.min(start + num, data.length);
+            let n = Util.getLength(maxNum);
+            for (let i = start; i < start + num && i < data.length; i++) {
+                let key = data[i][namePar];
+                let val = data[i][valPar];
+                let img = data[i][url];
+                let $clone = $($("#data-row")[0].content.cloneNode(true));
+                $clone.find(".data-row-key").html(key);
+                $clone.find(".data-row-val").html(val);
+                $clone.find(".data-row-rank").html("#" + (i + 1)).css("width", (n + 1) + "ch");
+                if (img) {
+                    $clone.find(".data-row-img").removeClass("none").attr("src", img);
+                }
+                $cont.append($clone);
+            }
+            // console.log(data);
+        }
     return {
         animate: animate
     }
@@ -609,7 +809,8 @@ let MeetStorage = function () {
             MeetingHistory.update();
         },
         cleanDatabase = function () {
-            for (let [key, _] of Object.entries(meeting_database)) {
+            //TODO: Also merge any users who have changed pfp
+            for (let [key] of Object.entries(meeting_database)) {
                 for (let i = 0; i < meeting_database[key].length; i++) {
                     meeting_database[key][i].category = key;
                 }
@@ -620,31 +821,22 @@ let MeetStorage = function () {
                 chrome.tabs.sendMessage(tabs[0].id, { type: "get_meeting_data" }, async function (data) {
 
                     if (chrome.runtime.lastError) {
-                        $("[ref='C'] .full-disp").html("You aren't in a call yet!");
-
+                        CurrentMeeting.render("You aren't in a call yet!");
                     } else {
-                        user_database = data.user_database;
+                        user_database = data.user_database; //TODO: Why is user_database passed in here
                         cur_meeting = data.cur_meeting;
-                        // all_cur_meetings = data.all_cur_meetings;
-                        console.log("data retrieved: ", data);
-
                         if (!cur_meeting) {
-                            $("[ref='C'] .full-disp").html("No data yet!");
+                            CurrentMeeting.render("No data yet!");
                         } else {
-                            $("[ref='C'] .full-disp").css('display', 'none');
-
-                            SpeakingUtil.updateSpeakerData(cur_meeting, $("#speaker-graph"));
-                            $(".selected-class p").html(cur_meeting.category);
+                            CurrentMeeting.render();
                         }
                     }
 
                     meeting_database = await getFromStorage(STR.all_other_meetings);
                     user_database = await getFromStorage(STR.users);
                     all_cur_meetings = await getFromStorage(STR.all_cur_meetings);
-
                     if (meeting_database) {
                         cleanDatabase();
-                        $("[ref='H'] .full-disp").css('display', 'none');
                         MeetingHistory.setUpPage();
                         SpeakingUtil.addDropMenuListener();
                     }
@@ -674,6 +866,13 @@ let MeetStorage = function () {
         init = function () {
             chrome.storage.onChanged.addListener(processStorageChanges);
             getAllData();
+        },
+        setCurMeetCategory = function (chosen_category) {
+            cur_meeting.category = chosen_category;
+            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                chrome.tabs.sendMessage(tabs[0].id, { type: "cur_meeting_update", category: chosen_category });
+            });
+            updateMeetingStorage();
         }
     return {
         init: init,
@@ -684,13 +883,27 @@ let MeetStorage = function () {
         get_user_database: () => user_database,
         get_cur_meeting: () => cur_meeting,
         get_meeting_database: () => meeting_database,
-        get_all_cur_meetings: () => all_cur_meetings
+        get_all_cur_meetings: () => all_cur_meetings,
+        setCurMeetCategory: setCurMeetCategory
     }
 }();
 let CurrentMeeting = function () {
     let user_data = [];
+    let render = function (str) {
+        if (str) {
+            $("[ref='C'] .full-disp").css('display', 'flex');
+            $("[ref='C'] .full-disp").html(str);
+        } else {
+
+            $("[ref='C'] .full-disp").css('display', 'none');
+            $(".selected-class p").html(MeetStorage.get_cur_meeting().category);
+
+            SpeakingUtil.updateSpeakerData(MeetStorage.get_cur_meeting(), $("#speaker-graph"));
+        }
+    }
     return {
-        get_user_data: () => user_data
+        get_user_data: () => user_data,
+        render: render
     }
 }();
 let SpeakingUtil = function () {
@@ -705,16 +918,10 @@ let SpeakingUtil = function () {
                 let original_category = $list_item.closest(".class-selector").find(".selected-class p").html();
                 let chosen_category = $list_item.find(".drop-menu-text").html();
                 if ($list_item.closest(".main").length > 0) {
-                    //TODO: Also move this to meetstorage
-                    MeetStorage.get_cur_meeting.category = chosen_category;
-                    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                        chrome.tabs.sendMessage(tabs[0].id, { type: "cur_meeting_update", category: chosen_category });
-                    });
-                    MeetStorage.updateMeetingStorage();
-
+                    MeetStorage.setCurMeetCategory(chosen_category);
                 } else {
-                    //TODO: Refactor this (maybe move to meeting history page because it accesses sorted_meetings)
-                    let moved_meeting = MeetingHistory.get_sorted_meetings()[parseInt($list_item.closest(".element-container").attr("id"))];
+                    let id = parseInt($list_item.closest(".element-container").attr("id"));
+                    let moved_meeting = MeetingHistory.getMeetingById(id);
                     MeetStorage.moveMeeting(moved_meeting, original_category, chosen_category);
                     // console.log(moved_meeting);
                     // console.log(meeting_database[original_category]);
@@ -785,6 +992,7 @@ let SpeakingUtil = function () {
             clone.querySelector(".drop-menu-text").innerHTML = content;
             if (add_class) {
                 clone.querySelector(".drop-menu-item").setAttribute('type', "add-new");
+
             }
 
             if ($menu) {
@@ -797,9 +1005,20 @@ let SpeakingUtil = function () {
                     $clone.addClass("undeletable");
                     // clone.classList.append("undeletable");
                 }
-            } else {
-                return $(clone);
+                // if(add_class){
+
+                //     $clone.find("input").on('keyup', function (event) {
+                //         console.log('dfs');
+                //         if (event.keyCode === 13) {
+                //             console.log('et');
+                //         }
+                //      });
+                // }
+
+                return $clone;
             }
+            return $(clone);
+
         },
         updateSpeakerData = function (meeting, chart, max_items = 7, one_time = false) {
 
@@ -831,8 +1050,10 @@ let SpeakingUtil = function () {
             }
             users.sort((a, b) => {
                 return b.DATA.speaking_time - a.DATA.speaking_time
-            })
-            displaySpeakerData(users, chart, max, max_items);
+            });
+            window.requestAnimationFrame(() => {
+                displaySpeakerData(users, chart, max, max_items);
+            });
         },
         displaySpeakerData = function (users, chart, max, max_items) {
             if (!chart[0]._tippy) {

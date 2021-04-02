@@ -36,20 +36,15 @@ img{
     -webkit-user-drag: none;
 }
 h1{
-    width: 100%;
-    height: 30px;
-    background: black;
-    text-align: center;
-    color: white;
-    font-weight: 400;
-    padding: 10px 0;
     margin: 0;
+
 }
 h2{
     margin: 0;
     padding: 10px 0 10px 35px;
     font-size: 20px;
     white-space: nowrap;
+    font-weight: 400;
 }
 h3{
     padding: 10px;
@@ -58,7 +53,7 @@ h3{
     margin-top: 30px;
 }
 h4{
-    font-size: 15px;
+    font-size: 14px;
     margin: 0;
 }
 p{
@@ -67,14 +62,45 @@ p{
     position: relative;
 }
 button{
-    font-size: 20px;
-    border: none;
+    /* border: 1px solid rgba(0, 153, 255, 0.596); */
+    /* border-left : 1px solid gray; */
     /* user-select: none; */
     padding: 10px;
-    
+    /* height: 100%; */
+    background: white;
+    font-size: 20px;
+    transition: .3s background;
+    padding: 4px 6px;
+}
+button.small{
+    border: none;
+    border-right: 1px solid gray;
+    font-size: 15px;
 }
 button:hover{
     cursor: pointer;
+    background: rgba(211, 211, 211, 0.541);
+}
+button:focus{
+    outline: none;
+}
+iframe{
+    border: none;
+    background: white;
+}
+iframe.full-page{
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    position: absolute;
+}
+
+.hidden{
+    display: none;
+}
+.page.active{
+    transform: translate(0,0);
 }
 .title{
     padding: 10px 0;
@@ -102,9 +128,8 @@ button:hover{
     font-size: 20px;
     color: gray;
 }
-.tab.selected{
-    background: black;
-    color: white;
+.heading-arrow:hover{
+    cursor: pointer;
 }
 .ripple{
     position: absolute;
@@ -145,13 +170,23 @@ button:hover{
     }
 }
 .tab-container{
-    overflow: scroll;
     height: 450px;
     width: 100%;
     display: none;
     position: relative;
 }
-
+.page{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+    transition: .5s all;
+    transform: translate(100%,0);
+}
+.page.below{
+    transform: translate(-20%,0);
+    opacity: 0;
+}
 .content-container{
     position: relative;
 }
@@ -160,6 +195,9 @@ button:hover{
     font-size: 20px;
     background: white;
     height: 2em;
+    justify-content: space-evenly;
+    border-bottom: 1px solid #8080805c;
+
 }
 #header-container{
     /* position: fixed; */
@@ -341,7 +379,11 @@ button:hover{
 
     /* border: 1px solid black; */
 }
-.class-selector.clicked .drop-menu{
+.drop-menu.reverse{
+    right: 0;
+    left: auto;
+}
+.class-selector.clicked .drop-menu, .filter.clicked .drop-menu{
     /* animation: show-menu .1s linear; */
     /* animation-fill-mode:forwards; */
     transform: translate(0,0);
@@ -409,11 +451,7 @@ display: block;
 .element-container.live{
     background: gold
 }
-.element-container.no-hidden-overflow{
-    /* border: none; */
-    overflow: visible;
 
-}
 .element-container.removed{
     transform: scale(0);
 }
@@ -422,12 +460,24 @@ display: block;
     z-index: 9;
     margin: 10px 0;
 }
-.element-container.flex{
+.flex{
     justify-content: center;
     display: flex;
     align-items: center;
 }
 
+.float-box.no-margin{
+    margin: 0;
+}
+.float-box.no-padding{
+    padding: 0;
+}
+.float-box.overflow-visible{
+    overflow: visible;
+}
+.float-box.top{
+    z-index: 99;
+}
 .meeting-top{
     display: flex;
     box-sizing: border-box;
@@ -493,7 +543,13 @@ display: block;
     padding: 7px 0;
     transition: .2s all;
     overflow: hidden;
-    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.tab-icon{
+    height: 24px;
+    margin-right: .5ch;
 }
 .tab-button:hover{
     cursor: pointer;
@@ -555,12 +611,12 @@ img[ref]:hover{
 .data-square.no-grow{
     flex-grow: 0;
 }
-.meetings-general-data{
-    padding: 20px;
+.float-box{
+    padding: 5px;
     margin: 20px;
-    display: flex;
-    box-shadow: 0px 0px 10px;
-
+    box-shadow: 0 1px 2px 0 rgb(60 64 67 / 30%), 0 2px 6px 2px rgb(60 64 67 / 15%);    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
 }
 .m20{
     width: 20px;
@@ -577,7 +633,7 @@ img[ref]:hover{
 #meeting-cats{
     font-size: 12px;
 }
-.filter{
+.cur-filter{
     text-overflow: ellipsis;
     font-weight: lighter;
     font-size: 20px;
@@ -588,4 +644,120 @@ img[ref]:hover{
     width: 50%;
     margin: 20px auto;
     border: 1px solid gray;
+}
+.data-row{
+    /* height: 30px; */
+    font-size: 15px;
+    width: 100%;
+    border-top: 1px solid gray;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+}
+.data-row.heading{
+    font-size: 20px;
+    font-weight: 500;
+    text-align: center;
+    background: black;
+    color: white;
+    justify-content: center;
+}
+.data-row.clickable:hover{
+    /* outline: 1px solid black; */
+    cursor: pointer;
+    box-shadow: inset 0 0 4px 1px black;
+}
+.data-row.more{
+    font-size: 10px;
+    text-align: right;
+
+}
+.data-row-key{
+    flex-grow: 1;
+}
+.data-row-val{
+    font-weight: bold;
+}
+.data-row-val::after{
+    margin-left: 3px;
+    content: attr(postfix);
+    font-size: 10px;
+    color: gray;
+
+}
+.page-selector{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.page-selector input{
+    box-sizing: content-box;
+    border: 1px solid gray;
+    width: 2ch;
+    padding: 5px 4px;
+}
+.page-selector *{
+    margin: 0 .25ch;
+}
+.max-items-selector{
+    display: flex;
+    flex-grow: 1;
+    align-items: center;
+}
+.max-items-selector button.selected{
+    font-weight: bold;
+}
+.spacer{
+    flex-grow: 999;
+}
+.row-icon{
+    height: 30px;
+}
+.row-icon.disabled{
+    user-select: none;
+    pointer-events: none;
+    opacity: .5;
+}
+.row-icon:hover{
+    cursor: pointer;
+}
+.heading .row-icon{
+    filter: invert(100%);
+}
+.heading-txt{
+    flex-grow: 1;
+}
+.data-row-img{
+    margin-right: 10px;
+    border-radius: 50%;
+    height: 2em;
+}
+.data-row-img.none{
+    display: none;
+}
+.data-row-rank{
+    text-align: right;
+    margin-right: 10px;
+    font-weight: bold;
+    font-size: larger;
+    width: 4ch;
+}
+.filter{
+    /* width: px; */
+    position: relative;
+    text-align: right;
+}
+.main-heading{
+    height: 30px;
+    padding: 10px 0;
+    margin: 0 20px;
+    border-bottom: 1px solid #8080805c;
+    text-align: center;
+    position: relative;
+}
+.heading-arrow{
+    position: absolute;
+    left: 10px;
+    height: 30px;
 }

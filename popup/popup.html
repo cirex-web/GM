@@ -30,14 +30,16 @@
     <div id="header">
       <div class="tab-button" ref="C">
         <img class="tab-icon" src="../icons/call.svg"></img>
-
+        <h4>Current</h4>
       </div>
       <div class="tab-button" ref="H">
         <img class="tab-icon" src="../icons/storage.svg"></img>
+        <h4>History</h4>
 
       </div>
       <div class="tab-button" ref="A">
         <img class="tab-icon" src="../icons/analysis.svg"></img>
+        <h4>Analysis</h4>
 
       </div>
 
@@ -47,32 +49,39 @@
       <!-- <div class="tab">A</div> -->
 
     </div>
-    <h1 id="tab-container-heading">Current Meeting</h1>
+    <div class="main-heading" id="tab-container-heading">
+      <img class="heading-arrow" src="../icons/back-arrow.svg"></img>
+
+      <h1 class="main-heading-txt"></h1>
+    </h1>
 
   </div>
 
   <div class="tab-container" ref="C">
-    <div class='credits'>
-      Credits: Developer - Eric Xu | Version:
-      <span id="version"></span>
-    </div>
-    <div class="element-container no-hidden-overflow flex">
-      <h2>Current Class: </h2>
-      <div class="class-selector grow main">
-        <div class="selected-class">
-          <p class="class-name">Classss</p>
-          <img class="select-symbol" src="../icons/down-arrow.svg"></img>
+    <div class="page active" lev="0">
+      <div class='credits'>
+        Developer - Eric Xu | Version: <span id="version"></span>
+      </div>
+      <div class="float-box no-padding ">
+
+        <div class="float-box no-margin flex overflow-visible ">
+          <h2>Current Class: </h2>
+          <div class="class-selector grow main">
+            <div class="selected-class">
+              <p class="class-name">Classss</p>
+              <img class="select-symbol" src="../icons/down-arrow.svg"></img>
+
+            </div>
+
+            <div class="drop-menu"></div>
+          </div>
 
         </div>
+        <div id="speaker-graph" class="graph-container">
+        </div>
+      </div>
+    </div>
 
-        <div class="drop-menu"></div>
-      </div>
-      <div class="m20"></div>
-    </div>
-    <div class="element-container">
-      <div id="speaker-graph" class="graph-container">
-      </div>
-    </div>
 
 
     <div class="full-disp"></div>
@@ -80,48 +89,77 @@
   <div class="tab-container" ref="H">
 
     <div class="full-disp">No meetings saved</div>
-    <div class="meetings-general-data">
-      <div class="data-square">
-        <div id="meeting-number">0</div><span class="subtitle">Tracked Meetings</span>
-        <div class="divider"></div>
-        <h4>Current filter: <div class="filter">None</div></h4>
+    <div class="page active" lev="0">
+      <div class="float-box flex">
+        <div class="data-square">
+          <div id="meeting-number">0</div><span class="subtitle">Tracked Meetings</span>
+          <!-- <iframe src="sandbox.html" width="300" height="200"></iframe> -->
+
+          <div class="divider"></div>
+          <h4>Current filter: <div class="cur-filter">None</div>
+          </h4>
+        </div>
+        <div class="data-square no-grow">
+          <div id="meeting-cats"></div>
+
+
+        </div>
+
+        <!-- <div class="data-square"><div id="meeting-people">0</div><span class="subtitle">Tracked People</span></div> -->
+
       </div>
-      <div class="data-square no-grow">
-        <div id="meeting-cats"></div>
 
+      <div class="notice" id="no-meetings-notice">
+        <h3>There are no meetings under this current filter</h3>
+        <button>Return to all</button>
+      </div>
+      <div id="meetings-container">
 
       </div>
-
-      <!-- <div class="data-square"><div id="meeting-people">0</div><span class="subtitle">Tracked People</span></div> -->
-
     </div>
 
-    <div class="notice" id="no-meetings-notice">
-      <h3>There are no meetings under this current filter</h3>
-      <button>Return to all</button>
-    </div>
-    <div id="meetings-container" >
-      
-    </div>
   </div>
   <div class="tab-container" ref="A">
-    <div class="element-container">
-      <div class="graph" id="main-bar"></div>
-    </div>
-    <div id="meeting-data-container">
-      <h1 id="meeting-title">Data breakdown for <span>{cat}</span></h1>
-      <div class="element-container">
-        <div class="graph" id="meeting-graph-one"></div>
+    <div class="page active" lev="0">
+      <div class="float-box">
+        <div class="search-bar">Search for people, classes, and more.</div>
       </div>
-      <div class="element-container">
-        <div class="graph" id="meeting-graph-two"></div>
+      <div id="active-participants" class="float-box no-padding leaderboard">
+        <div class="data-row heading">
+          <div class="heading-txt"></div>
+
+        </div>
+        <div class="row-container">
+
+        </div>
+
+        <div class="data-row more"><a href="#" ref-type="leaderboard" ref-id="user">See more</a></div>
+
+      </div>
+      <div id="active-classes" class="float-box no-padding leaderboard">
+        <div class="data-row heading">
+          <div class="heading-txt"></div>
+        </div>
+        <div class="row-container">
+        </div>
+
+        <div class="data-row more"><a href="#" ref-type="leaderboard" ref-id="classes">See more</a></div>
+
       </div>
     </div>
-    <div class="full-disp">No meetings to analyze...</div>
+    <div class="full-disp">Save at least 5 meetings to unlock analysis</div>
 
   </div>
 
   </div>
+  <template id="data-row">
+    <div class="data-row clickable">
+      <div class="data-row-rank">#4</div>
+      <img class="data-row-img none" src="">
+      <div class="data-row-key">Bob</div>
+      <div class="data-row-val" postfix="min/meet">10</div>
+    </div>
+  </template>
   <template id="speaker-bar">
     <div class="bar">
       <div class="image-container">
