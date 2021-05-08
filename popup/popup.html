@@ -17,7 +17,8 @@
   <script src="/external/highCharts.js"></script>
 
   <link rel="stylesheet" href="/external/scale.css" />
-  <script src="popup.js"></script>
+  <!-- <script src="bundle.js"></script> -->
+  <script type="module" src="popup.js"></script>
 
   <!-- <script src="https://kit.fontawesome.com/b35280581b.js"></script> -->
 
@@ -25,7 +26,6 @@
 
 <body>
   <div id="header-container">
-    <div class="title">Clock it!<span> The Google Meet Participation Tracker</span></div>
 
     <div id="header">
       <div class="tab-button" ref="C">
@@ -58,10 +58,11 @@
   </div>
 
   <div class="tab-container" ref="C">
+    <div class='credits'>
+      <div class="title">Timbre: <span> The Meeting Participation Tracker | </span>V: <span id="version"></span></div>
+    </div>
     <div class="page active" lev="0">
-      <div class='credits'>
-        Developer - Eric Xu | Version: <span id="version"></span>
-      </div>
+      
       <div class="float-box no-padding ">
 
         <div class="float-box no-margin flex overflow-visible ">

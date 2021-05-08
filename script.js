@@ -1,4 +1,6 @@
 // Relevant GM elements 
+
+
 let ELEMENTS = {
     SHOW_USERS: {
         str: "Show everyone",
