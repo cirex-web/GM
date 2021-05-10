@@ -1,4 +1,4 @@
-import {MeetStorage,Util,SpeakingUtil,Logger} from "../scripts/internal.js"
+import {MeetStorage,Util,SpeakingUtil,Logger} from "./internal.js"
 
 
 let MeetingHistory = function () {
@@ -286,7 +286,7 @@ let MeetingHistory = function () {
         filterMeetings: filterMeetings,
         setUp: setUpMeetingsPage,
         animate: animateMeetingsPage,
-        update: updateMeetingsPage,
+        update: updateMeetingsPage
     }
 }();
 

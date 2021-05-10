@@ -146,9 +146,7 @@ let utilFunctions = {
 
                     if (!local.sidebar_init.phase_one) {
                         local.sidebar_init.phase_one = true;
-                        console.log("init pahse one");
                     } else {
-                        console.log("clicked");
                         local.clicked_sidebar = true;
 
                     }
@@ -166,11 +164,22 @@ let utilFunctions = {
 }
 
 let meet_code = $('[data-meeting-code]').attr('data-meeting-code') || $('[data-unresolved-meeting-id]').attr('data-unresolved-meeting-id');
-let cur_meeting, user_database;
+let cur_meet = {
+    lastUpdated : + new Date(), //TODO: change to last_updated but then that breaks all previous objects
+    start_time : + new Date(),
+    meeting_code : undefined,
+    user_data : {},
+    category : "UNCATEGORIZED",
+    teacher_IDs : [],
+    nickname : undefined
+}, user_database;
+let to_merge = true;
 
-for (n of Object.keys(ELEMENTS)) {
+
+for (let n of Object.keys(ELEMENTS)) {
     ELEMENTS[n] = new El(ELEMENTS[n]);
 }
+
 injectFunctionsV2();
 listenForUpdates();
 
@@ -179,11 +188,12 @@ document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
     prepareToRun();
 });
 document.arrive(ELEMENTS.LIST_ITEM.formQuery(), function () {
+    setUpMeetingData();
     registerUsers();
 });
 
 function prepareToRun() {
-    if (cur_meeting && user_database) {
+    if (user_database) {
         run();
     } else {
         setTimeout(() => {
@@ -200,12 +210,10 @@ async function run() {
                 if (!local.sidebar_init.phase_two) { //Should only be like this in the beginning
                     // ELEMENTS.SIDE_BAR.getEl().css("opacity",0);
                     ELEMENTS.SHOW_USERS.getEl().click();
-                    // ELEMENTS.SHOW_CHAT.getEl().attr("jsaction","");
                     let button_clone = ELEMENTS.SHOW_CHAT.getEl().clone();
                     ELEMENTS.SHOW_CHAT.getEl().replaceWith(button_clone);
                     await init_sidebar();
 
-                    setUpMeetingData();
                 }
 
                 ELEMENTS.PEOPLE_TAB_PANEL.getEl()[0].style.display = 'block';
@@ -266,39 +274,16 @@ async function run() {
 }
 function listenForUpdates() {
     $("data_transfer")[0].addEventListener('send_data', function (e) {
-        cur_meeting = e.detail.meeting_data;
         user_database = e.detail.user_database;
 
-
-        console.log("meeting data and user database: ", cur_meeting, user_database);
-        try {
-            let found = false;
-
-            for (let meet of cur_meeting) {
-                if (meet.meeting_code === meet_code) {
-
-                    cur_meeting = meet;
-                    found = true;
-
-                    break;
-                }
-            }
-            if (!found) {
-                cur_meeting = cur_meeting[cur_meeting.length - 1];
-                cur_meeting.meeting_code = meet_code;
-
-            }
-            console.log("cur_meeting: ", cur_meeting);
-
-
-        } catch (e) {
-            console.log(e);
-        }
-
+    });
+    $("data_transfer")[0].addEventListener('cur_meeting_category_update', function (e) {
+        cur_meet.category = e.detail.meeting_category;
+        updateStorage();
     });
     $("data_transfer")[0].addEventListener('cur_meeting_update', function (e) {
-        cur_meeting.category = e.detail.meeting_category;
-        updateStorage();
+        cur_meet = e.detail.cur_meet;
+        to_merge = false;
     });
 }
 function createDataPool() {
@@ -308,10 +293,9 @@ function createDataPool() {
 }
 function setUpMeetingData() {
     let nickname = ELEMENTS.MEETING_NICKNAME.getEl().html().toString();
-    cur_meeting.nickname = nickname.includes(" ") ? undefined : nickname;
-    if (!cur_meeting.start_time) {
-        cur_meeting.start_time = + new Date();
-    }
+    cur_meet.nickname = nickname.includes(" ") ? undefined : nickname;
+    cur_meet.meeting_code = meet_code;
+    updateStorage();
 }
 function init_sidebar() { //this bit of code just sets up the sidebar for data-gathering. 
     return new Promise((re) => {
@@ -368,7 +352,7 @@ function cloneListEl($element) {
 
 function registerUsers() {
     try {
-        for (el of ELEMENTS.LIST_ITEM.getEl()) {
+        for (let el of ELEMENTS.LIST_ITEM.getEl()) {
             const USER_IMG_URL = getUserImage(el, true);
             const USER_NAME = el.querySelector("." + CLASS_NAMES.USER_NAME).innerHTML;
             const USER_ID = getUserImage(el);
@@ -382,9 +366,10 @@ function registerUsers() {
             } else {
                 user.NAME = USER_NAME;
             }
-            let user_in_meet = cur_meeting.user_data[USER_ID];
-            if (!local.registered_users || (local.registered_users && !cur_meeting.user_data[USER_ID])) {
-                cur_meeting.user_data[USER_ID] = {
+
+            let user_in_meet = cur_meet.user_data[USER_ID];
+            if (!local.registered_users || (local.registered_users && !cur_meet.user_data[USER_ID])) {
+                cur_meet.user_data[USER_ID] = {
                     speaking_time: user_in_meet ? user_in_meet.speaking_time : 0,
                     is_speaking: false,
                     before_time: undefined,
@@ -398,8 +383,8 @@ function registerUsers() {
 
         }
     } catch (e) {
-        console.log("ERORO", e);
-    };
+        console.log(e);
+    }
 
     updateStorage();
 }
@@ -407,10 +392,7 @@ function inCall() {
     return ELEMENTS.SHOW_USERS.getEl().length > 0;
     // return $("[data-allocation-index]").length>0;
 }
-function barOpen() {
-    // return OTHER.fetchEl(OTHER.SIDEBAR_CONTENT).html()!=="";
-    return ELEMENTS.SIDE_BAR.getEl().hasClass(CLASS_NAMES.SIDEBAR_OPEN);
-}
+
 function inject(before, fn) {
     return function () {
         try {
@@ -424,49 +406,36 @@ function inject(before, fn) {
     }
 }
 function injectFunctionsV2() {
+    let found = 0;
     for (var key in window.default_MeetingsUi) {
         if (window.default_MeetingsUi.hasOwnProperty(key)) {
             let original_func = window.default_MeetingsUi[key];
             if (!original_func || typeof original_func != "function") continue;
-            for (injectObj of Object.values(utilFunctions)) {
+
+            for (let injectObj of Object.values(utilFunctions)) {
 
                 if (Function.prototype.toString.call(original_func).includes(injectObj.snippet)) {
-                    f = true;
-                    console.log(key);
+                    found++;
                     window.default_MeetingsUi[key] = inject(injectObj.func, original_func);
                 }
             }
         }
     }
-    console.log(f?"Injection success!":"Injection failure");
+    console.log(found==Object.keys(utilFunctions).length?"Function injection success!":"Function injection failure");
 }
-function injectFunctions() {
-    let f = false;
-    for ([name, original_func] of Object.entries(window.default_MeetingsUi)) {
-        if (!original_func || typeof original_func != "function") continue;
-        for (injectObj of Object.values(utilFunctions)) {
 
-            if (Function.prototype.toString.call(original_func).includes(injectObj.snippet)) {
-                f = true;
-                console.log(name);
-                window.default_MeetingsUi[name] = inject(injectObj.func, original_func);
-            }
-        }
-    }
-    // if (!f) console.log("houston we got a problem");
-}
 
 function updateSpeakerData(speaker_el, class_added) {
     if (!local.sidebar_init.phase_one) return;
     let list_container = speaker_el.closest(ELEMENTS.LIST_ITEM.formQuery());
-    cur_meeting.lastUpdated = + new Date();
+    cur_meet.lastUpdated = + new Date();
     if (list_container != null) {
 
         if ($(list_container).find("." + CLASS_NAMES.USER_PRESENTATION).length > 0 && OPTIONS.NO_PRESENTATIONS) {
             return;
         }
 
-        let user = cur_meeting.user_data[getUserImage(list_container)];
+        let user = cur_meet.user_data[getUserImage(list_container)];
 
         if (class_added === CLASS_NAMES.USER_MUTED) { //GM doesn't update inner sound class if user mutes; it just adds the class USER_MUTED to the parent.
             stopTrackingUserTime(user, list_container);
@@ -513,12 +482,12 @@ function startTrackingUserTime(user, list_container) {
     }
     user.is_speaking = true;
     list_container.style.background = "green";
+    updateStorage();
     return setInterval(() => {
         let cur_time = new Date();
         user.speaking_time += cur_time - user.before_time;
         user.before_time = cur_time;
         // console.log(user.speaking_time, meeting_data.user_data[getUserImage(list_container)].speaking_time);
-        updateStorage();
     }, 10);
 }
 function matches(element, obj) {
@@ -527,8 +496,9 @@ function matches(element, obj) {
 function updateStorage() {
     const event = new CustomEvent('merge_cur_meeting', {
         detail: {
-            meeting_data: cur_meeting,
-            user_database: user_database
+            cur_meet,
+            user_database,
+            to_merge
         }
     });
     $("data_transfer")[0].dispatchEvent(event);

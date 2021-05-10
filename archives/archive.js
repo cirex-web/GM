@@ -28,3 +28,22 @@ let OTHER = {
         return this[name + "_EL"];
     }
 }
+function injectFunctions() {
+    let f = false;
+    for (let [name, original_func] of Object.entries(window.default_MeetingsUi)) {
+        if (!original_func || typeof original_func != "function") continue;
+        for (injectObj of Object.values(utilFunctions)) {
+
+            if (Function.prototype.toString.call(original_func).includes(injectObj.snippet)) {
+                f = true;
+                console.log(name);
+                window.default_MeetingsUi[name] = inject(injectObj.func, original_func);
+            }
+        }
+    }
+    // if (!f) console.log("houston we got a problem");
+}
+function barOpen() {
+    // return OTHER.fetchEl(OTHER.SIDEBAR_CONTENT).html()!=="";
+    return ELEMENTS.SIDE_BAR.getEl().hasClass(CLASS_NAMES.SIDEBAR_OPEN);
+}

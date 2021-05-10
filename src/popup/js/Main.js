@@ -1,4 +1,4 @@
-import {MeetingHistory,MeetStorage,Util,AnalysisPage,SpeakingUtil,CurrentMeeting} from "../scripts/internal.js"
+import {MeetingHistory,MeetStorage,Util,AnalysisPage,SpeakingUtil,CurrentMeeting} from "./internal.js"
 
 
 let Main = function () {

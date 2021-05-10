@@ -1,4 +1,4 @@
-import {MeetingHistory,MeetStorage,Util,CONFIG} from "../scripts/internal.js"
+import {MeetStorage,Util,CONFIG} from "./internal.js"
 
 
 let AnalysisPage = function () {
@@ -13,11 +13,11 @@ let AnalysisPage = function () {
     let animate = () => {
         //Conditions
         // && !seen_analysis && meeting_database && Object.keys(meeting_database).length > 0
-        if (!seen_analysis && MeetingHistory.get_sorted_meetings().length > 5) {
+        if (!seen_analysis && MeetStorage.getSortedMeetings().length > 5) {
             seen_analysis = true;
 
-            let meeting_database = MeetStorage.get_meeting_database();
-            let user_database = MeetStorage.get_user_database();
+            let meeting_database = MeetStorage.getMeetingDatabase();
+            let user_database = MeetStorage.getUserDatabase();
             for (let [name, cat] of Object.entries(meeting_database)) {
                 let total_time = 0;
                 for (let meeting of cat) {

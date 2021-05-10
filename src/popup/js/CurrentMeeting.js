@@ -1,4 +1,4 @@
-import {SpeakingUtil,MeetStorage} from "../scripts/internal.js"
+import {SpeakingUtil,MeetStorage} from "./internal.js"
 
 // const MeetStorage = require("../scripts/MeetStorage");
 // const SpeakingUtil = require("../scripts/SpeakingUtil");
@@ -12,9 +12,9 @@ let CurrentMeeting = function () {
         } else {
 
             $("[ref='C'] .full-disp").css('display', 'none');
-            $(".selected-class p").html(MeetStorage.get_cur_meeting().category);
+            $(".selected-class p").html(MeetStorage.getCurMeeting().category);
 
-            SpeakingUtil.updateSpeakerData(MeetStorage.get_cur_meeting(), $("#speaker-graph"), undefined, user_data);
+            SpeakingUtil.updateSpeakerData(MeetStorage.getCurMeeting(), $("#speaker-graph"), undefined, user_data);
         }
     }
     return {

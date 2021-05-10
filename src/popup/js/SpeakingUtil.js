@@ -1,4 +1,4 @@
-import {MeetStorage,Util, CONSTS, Logger} from "../scripts/internal.js"
+import {MeetStorage,Util, CONSTS, Logger, CONFIG} from "./internal.js"
 
 
 let SpeakingUtil = function () {
@@ -62,7 +62,7 @@ let SpeakingUtil = function () {
 
             if ($class_selector.hasClass("clicked")) {
 
-                for (let cat of Object.keys(MeetStorage.get_meeting_database())) {
+                for (let cat of Object.keys(MeetStorage.getMeetingDatabase())) {
                     createListItem($menu, cat);
                 }
                 createListItem($menu, "Add Class...", true);
@@ -116,7 +116,7 @@ let SpeakingUtil = function () {
             return $(clone);
 
         },
-        updateSpeakerData = function (meeting, chart, max_items = 7, users = []) {
+        updateSpeakerData = function (meeting, chart, max_items = CONFIG.SETTINGS.MAX_SPEAKERS_SHOWN, users = []) {
 
 
             let max = 1;
@@ -124,7 +124,7 @@ let SpeakingUtil = function () {
             for (let [id, user] of Object.entries(meeting.user_data)) {
                 max = Math.max(max, user.speaking_time);
                 let found = false;
-                let img = MeetStorage.get_user_database()[id].IMG_ID;
+                let img = MeetStorage.getUserDatabase()[id].IMG_ID;
                 for (let user_stored of users) {
                     if (user_stored.ID == id) {
                         user_stored.DATA = user;
@@ -182,8 +182,8 @@ let SpeakingUtil = function () {
                 entire_bar.css("height", height + "px");
 
                 bar.css("width", (user.DATA.speaking_time / max * 100) + "%");
-                bar.attr('val', MeetStorage.get_user_database()[user.ID].NAME);
-                bar_container.find(".bar-txt-overflow").html(MeetStorage.get_user_database()[user.ID].NAME);
+                bar.attr('val', MeetStorage.getUserDatabase()[user.ID].NAME);
+                bar_container.find(".bar-txt-overflow").html(MeetStorage.getUserDatabase()[user.ID].NAME);
                 // bar_container.attr('style', '--val: '+ user_database[user.ID].NAME+";");
 
                 let str = Util.msToString(user.DATA.speaking_time);

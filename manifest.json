@@ -1,14 +1,14 @@
 {
     "manifest_version": 2,
     "name": "Timbre",
-    "version":"0.3.1",
+    "version":"0.4.0",
     "browser_action":{
-        "default_popup": "/popup/popup.html"
+        "default_popup": "/src/popup/html/popup.html"
     },
     "permissions":["activeTab","storage","unlimitedStorage"],
     "content_scripts":[
         {
-            "js":["/external/jquery.js","/external/arrive.js","content.js"],
+            "js":["/external/jquery.js","/external/arrive.js","/src/backend/js/main.js"],
             "matches": [
                 "*://meet.google.com/*"
             ]
@@ -16,6 +16,6 @@
     ],
     "content_security_policy": "style-src 'self' 'sha256-Ucye6igbBXX1kfOSQeZ4ymqY8ogge1RacRAkgcaiVxc=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-DiWU82cFIBGH7Ne2frmS4x7VCHwEoh4eM70g23XHRCc=' 'sha256-RfArpP7YVKZK2GwjlAw5YsYwZkO2mOUnJGizYsRuK1o=' 'sha256-RfArpP7YVKZK2GwjlAw5YsYwZkO2mOUnJGizYsRuK1o=' 'sha256-AT03+arOBfVtK8iww5BekxTZb7lk7pItZH/lBKOqPeQ='",
     "web_accessible_resources": [
-        "script.js","/popup/popup.js","injected.css","/external/*"
+        "injected.css","/external/*","/src/*"
     ]
 }
