@@ -188,7 +188,9 @@ document.arrive(ELEMENTS.SHOW_USERS.formQuery(), () => {
     prepareToRun();
 });
 document.arrive(ELEMENTS.LIST_ITEM.formQuery(), function () {
-    setUpMeetingData();
+    if(!cur_meet.meeting_code){
+        setUpMeetingData(); 
+    }
     registerUsers();
 });
 
@@ -340,7 +342,7 @@ function cloneListEl($element) {
             clone.attr("ext_type", 'clone');
 
             clone.appendTo($element);
-            console.log(clone);
+            // console.log(clone);
             setTimeout(() => {
                 clone.appendTo(ELEMENTS.CUSTOM_HOLDER.getEl());
             }, 1000);
@@ -428,7 +430,6 @@ function injectFunctionsV2() {
 function updateSpeakerData(speaker_el, class_added) {
     if (!local.sidebar_init.phase_one) return;
     let list_container = speaker_el.closest(ELEMENTS.LIST_ITEM.formQuery());
-    cur_meet.lastUpdated = + new Date();
     if (list_container != null) {
 
         if ($(list_container).find("." + CLASS_NAMES.USER_PRESENTATION).length > 0 && OPTIONS.NO_PRESENTATIONS) {
@@ -482,11 +483,17 @@ function startTrackingUserTime(user, list_container) {
     }
     user.is_speaking = true;
     list_container.style.background = "green";
+    let iteration = 1;
     updateStorage();
     return setInterval(() => {
         let cur_time = new Date();
         user.speaking_time += cur_time - user.before_time;
         user.before_time = cur_time;
+        if(iteration%10==0){
+            iteration = 0;
+            updateStorage();
+        }
+        iteration++;
         // console.log(user.speaking_time, meeting_data.user_data[getUserImage(list_container)].speaking_time);
     }, 10);
 }
@@ -494,6 +501,7 @@ function matches(element, obj) {
     return element.getAttribute(obj.type) == obj.str;
 }
 function updateStorage() {
+    cur_meet.lastUpdated = + new Date();
     const event = new CustomEvent('merge_cur_meeting', {
         detail: {
             cur_meet,

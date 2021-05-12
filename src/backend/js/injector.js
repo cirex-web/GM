@@ -1,6 +1,7 @@
 // s.setAttribute('data-version', browser.runtime.getManifest().version)
 
 import { CONSTS } from "../../Config.js"
+import { Logger } from "../../Logger.js";
 
 
 let STR = {
@@ -39,8 +40,8 @@ if (window.location.pathname !== "/") {
 
 
             processExpiredMeetings();
-            injectScriptsAndStyles().then(()=>{
-                console.log("Successfully injected script into DOM!");
+            injectScriptsAndStyles().then(() => {
+                Logger.log("Successfully injected script into DOM!");
             });
             addPopupListeners();
 
@@ -80,16 +81,16 @@ function addScriptListener() {
             if (stored_meet.meeting_code == cur_meet.meeting_code) {
                 if (to_merge) {
 
-                    console.log("Merged meetings",stored_meet,cur_meet);
-                    mergeMeetings(stored_meet,cur_meet);
+                    console.log("Merged meetings", stored_meet, cur_meet);
+                    mergeMeetings(stored_meet, cur_meet);
                     sendToScript("cur_meeting_update", { cur_meet: all_cur_meetings[i] }); //should make to_merge toggle false
 
                 } else {
-                    if(ableToOverwrite(stored_meet,cur_meet)){
-                        console.log("Overwriting",all_cur_meetings[i],"with",cur_meet);
+                    if (ableToOverwrite(stored_meet, cur_meet)) {
+                        console.log("Overwriting", all_cur_meetings[i], "with", cur_meet);
                         all_cur_meetings[i] = cur_meet;
-                    }else{
-                        console.log("Overwrite intercepted! ",stored_meet,cur_meet);
+                    } else {
+                        console.log("Overwrite intercepted! ", stored_meet, cur_meet);
                         sendToScript("cur_meeting_update", { cur_meet: all_cur_meetings[i] });
                     }
                 }
@@ -100,8 +101,8 @@ function addScriptListener() {
 
         if (!merged) {
             all_cur_meetings.push(cur_meet);
-            sendToScript("cur_meeting_update", {cur_meet}); //should make to_merge toggle false
-            console.log("Successfully initialized new meeting",cur_meet);
+            sendToScript("cur_meeting_update", { cur_meet }); //should make to_merge toggle false
+            console.log("Successfully initialized new meeting", cur_meet);
 
         }
 
@@ -113,12 +114,12 @@ function addScriptListener() {
         });
     });
 }
-function ableToOverwrite(stored_meet, cur_meet){
+function ableToOverwrite(stored_meet, cur_meet) {
     let stored_users = stored_meet.user_data;
     let cur_users = cur_meet.user_data;
-    if(Object.values(stored_users).length>Object.values(cur_users).length)return false;
-    for(let [id,data] of Object.entries(stored_users)){
-        if(!cur_users[id]||cur_users[id].speaking_time<data.speaking_time){
+    if (Object.values(stored_users).length > Object.values(cur_users).length) return false;
+    for (let [id, data] of Object.entries(stored_users)) {
+        if (!cur_users[id] || cur_users[id].speaking_time < data.speaking_time) {
             return false;
         }
     }
@@ -127,7 +128,7 @@ function ableToOverwrite(stored_meet, cur_meet){
 function mergeMeetings(stored_meet, cur_meet) {
     stored_meet.lastUpdated = Math.max(stored_meet.lastUpdated, cur_meet.lastUpdated);
     stored_meet.teacher_IDs = [...new Set(stored_meet.teacher_IDs.concat(cur_meet.teacher_IDs))];
-    if(stored_meet.category===CONSTS.UNCAT){
+    if (stored_meet.category === CONSTS.UNCAT) {
 
         stored_meet.category = cur_meet.category;
     }
@@ -155,14 +156,19 @@ function sendToScript(name, data) {
 function addPopupListeners() {
     chrome.storage.onChanged.addListener(function (changes) {
         //Just to stay up-to-date with data changes (possibly from other meetings)
-        for (var key in changes) {
+        Logger.log(changes);
+        for (let key in changes) {
+
             var storageChange = changes[key];
             if (key == STR.all_other_meetings) {
                 meeting_database = storageChange.newValue;
-            } else if (key == STR.all_cur_meetings) {
+            } else if (key == STR.cur_meetings) {
                 all_cur_meetings = storageChange.newValue;
+                Logger.log("Alert! Meeting changed", all_cur_meetings);
             }
         }
+
+
     });
     chrome.runtime.onMessage.addListener( //Recieving end of comms with popup.js
         function (message, _, sendResponse) {
@@ -174,7 +180,7 @@ function addPopupListeners() {
                         all_cur_meetings
                     });
                     break;
-                case "cur_meeting_update":{
+                case "cur_meeting_update": {
                     const event = new CustomEvent('cur_meeting_category_update', {
                         detail: {
                             meeting_category: message.category
@@ -184,7 +190,7 @@ function addPopupListeners() {
                     sendResponse("Category update sent!"); //my social life has amounted to talking to various js scripts
                     break;
                 }
-                    
+
                 default:
                     console.log("popup has sent the invalid message: ", message);
                     break;
