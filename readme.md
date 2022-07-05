@@ -39,3 +39,18 @@ Prevent a student from dominating the conversation
 Encourages quieter students to participate
 
 
+# Some screenshots:
+
+### Current meeting page
+<img width="363" alt="Screen Shot 2022-07-05 at 3 53 14 PM" src="https://user-images.githubusercontent.com/57322506/177396590-85445e0e-300d-481b-ac89-068638caa7ff.png">
+
+### Meeting history page
+<img width="359" alt="Screen Shot 2022-07-05 at 3 52 57 PM" src="https://user-images.githubusercontent.com/57322506/177396777-784123c2-7a7d-4e48-b3f6-b318d21fa8c0.png">
+<img width="361" alt="Screen Shot 2022-07-05 at 3 52 41 PM" src="https://user-images.githubusercontent.com/57322506/177396681-f4ef5f47-9735-4c50-911e-0f1089a2c115.png">
+
+
+### Analysis section
+<img width="360" alt="Screen Shot 2022-07-05 at 3 53 33 PM" src="https://user-images.githubusercontent.com/57322506/177396730-7cb3b536-d700-4554-8b95-b31088917a6b.png">
+<img width="357" alt="Screen Shot 2022-07-05 at 3 53 47 PM" src="https://user-images.githubusercontent.com/57322506/177396827-2aa26e52-9674-4f4f-83ed-bc8efcb13c0f.png">
+
+
